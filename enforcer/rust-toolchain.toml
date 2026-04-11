@@ -1,0 +1,5 @@
+[toolchain]
+channel = "nightly"
+components = ["rust-src"]
+# Nightly is required for aya-ebpf (BPF target support).
+# rust-src is required for -Z build-std=core when compiling BPF programs.

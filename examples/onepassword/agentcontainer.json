@@ -1,0 +1,64 @@
+{
+  // 1Password secrets provider example.
+  // Uses the credential-helper provider with the `op` CLI.
+  // Requires 1Password desktop app for biometric approval.
+  "name": "onepassword-agent",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**", "/run/secrets/**"],
+        "write": ["/workspace/**"]
+      },
+      "network": {
+        "egress": [
+          { "host": "api.github.com", "port": 443 },
+          { "host": "registry.npmjs.org", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "npm install",
+          "npm test",
+          "npm run build",
+          "git status",
+          "git diff"
+        ]
+      }
+    },
+
+    "secrets": {
+      // GitHub token stored in 1Password.
+      // The op:// URI references an item in your 1Password vault.
+      // Format: op://<vault>/<item>/<field>
+      "GITHUB_TOKEN": {
+        "provider": "credential-helper",
+        "path": "op://Development/GitHub PAT/credential",
+        "ttl": "1h",
+        "allowedTools": ["mcp-github"]
+      },
+
+      // NPM publish token from 1Password.
+      "NPM_TOKEN": {
+        "provider": "credential-helper",
+        "path": "op://Development/npm Registry/token",
+        "ttl": "4h"
+      },
+
+      // Database connection string from 1Password.
+      "DATABASE_URL": {
+        "provider": "credential-helper",
+        "path": "op://Development/Staging DB/connection-string",
+        "ttl": "1h",
+        "allowedTools": ["mcp-postgres"]
+      }
+    },
+
+    "policy": {
+      "escalation": "prompt",
+      "auditLog": true,
+      "sessionTimeout": "4h"
+    }
+  }
+}

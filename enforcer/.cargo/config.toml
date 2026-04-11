@@ -1,0 +1,3 @@
+# Alias for building BPF programs via xtask.
+[alias]
+xtask = "run --package xtask --"

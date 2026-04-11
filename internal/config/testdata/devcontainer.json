@@ -1,0 +1,10 @@
+{
+  "name": "plain-devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {}
+  },
+  "mounts": [
+    "source=go-cache,target=/home/vscode/go,type=volume"
+  ]
+}

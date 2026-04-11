@@ -1,0 +1,67 @@
+{
+  // Vault / OpenBao secrets provider example.
+  // Uses Vault Agent sidecar to fetch dynamic credentials.
+  // Works with both HashiCorp Vault and OpenBao (API-compatible).
+  "name": "vault-agent",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**", "/run/secrets/**"],
+        "write": ["/workspace/**"],
+        "deny": ["/workspace/.env"]
+      },
+      "network": {
+        "egress": [
+          { "host": "api.github.com", "port": 443 },
+          { "host": "registry.npmjs.org", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "npm install",
+          "npm test",
+          "git status",
+          "git diff"
+        ]
+      }
+    },
+
+    "secrets": {
+      // Dynamic database credentials — Vault creates a temporary user per session.
+      // Automatically revoked when the session ends.
+      "DB_PASSWORD": {
+        "provider": "vault",
+        "path": "database/creds/agent-readonly",
+        "ttl": "1h",
+        "rotation": "55m",
+        "allowedTools": ["mcp-postgres"]
+      },
+
+      // AWS STS credentials via Vault's AWS secrets engine.
+      // Short TTL limits blast radius if compromised.
+      "AWS_SESSION": {
+        "provider": "vault",
+        "path": "aws/sts/agent-deploy-role",
+        "ttl": "15m",
+        "rotation": "12m",
+        "scope": ["s3:GetObject", "s3:PutObject"]
+      },
+
+      // Static KV secret — API key stored in Vault KV v2.
+      "API_KEY": {
+        "provider": "vault",
+        "path": "secret/data/agents/api-key",
+        "key": "value",
+        "ttl": "4h"
+      }
+    },
+
+    "policy": {
+      "escalation": "prompt",
+      "auditLog": true,
+      "sessionTimeout": "4h"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "shorthand-test",
+  "image": "ubuntu:latest",
+  "agent": {
+    "capabilities": {
+      "shell": {
+        "commands": [
+          "ls",
+          "cat",
+          "npm test",
+          {"binary": "git", "subcommands": ["status", "diff"]}
+        ]
+      }
+    }
+  }
+}

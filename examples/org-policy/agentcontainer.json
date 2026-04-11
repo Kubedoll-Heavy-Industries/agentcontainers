@@ -1,0 +1,82 @@
+{
+  // Example workspace config that references an org policy.
+  // The orgPolicy field points to an OCI artifact containing policy.json.
+  // At runtime, ac merges the org policy with this workspace config.
+  // Deny always wins — the org policy is strictly additive constraints.
+  "name": "org-governed-agent",
+  "image": "ghcr.io/your-org/agent-base:latest",
+
+  "agent": {
+    // OCI reference to the published org policy artifact.
+    "orgPolicy": "ghcr.io/your-org/agent-policy:latest",
+
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**", "/run/secrets/**"],
+        "write": ["/workspace/src/**", "/workspace/tests/**"],
+        "deny": ["/workspace/.env", "/workspace/.git/config"]
+      },
+      "network": {
+        "egress": [
+          { "host": "api.github.com", "port": 443 },
+          { "host": "registry.npmjs.org", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "npm install",
+          "npm test",
+          "npm run build",
+          "git status",
+          "git diff",
+          "git add",
+          "git commit"
+        ]
+      },
+      "git": {
+        "operations": ["clone", "fetch", "pull", "push", "commit"],
+        "branches": {
+          "push": ["feature/*", "fix/*"],
+          "deny": ["main", "release/*"]
+        }
+      }
+    },
+
+    "tools": {
+      "mcp": {
+        "github": {
+          "image": "ghcr.io/your-org/mcp-tools/github:v1",
+          "capabilities": ["network.egress"],
+          "secrets": ["GITHUB_TOKEN"]
+        }
+      }
+    },
+
+    "secrets": {
+      "GITHUB_TOKEN": {
+        "provider": "oidc",
+        "audience": "github.com",
+        "ttl": "1h",
+        "scope": ["repo:read", "issues:write"],
+        "allowedTools": ["github"]
+      }
+    },
+
+    "provenance": {
+      "require": {
+        "signatures": true,
+        "sbom": true,
+        "slsaLevel": 2,
+        "trustedRegistries": ["ghcr.io/your-org/*"]
+      }
+    },
+
+    "policy": {
+      "escalation": "deny",
+      "auditLog": true,
+      "sessionTimeout": "4h",
+      "maxConcurrentTools": 3,
+      "onCapabilityViolation": "deny"
+    }
+  }
+}

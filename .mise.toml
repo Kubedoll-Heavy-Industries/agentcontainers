@@ -1,0 +1,45 @@
+[tools]
+goreleaser = "latest"
+"ubi:golangci/golangci-lint" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"
+"ubi:air-verse/air" = "latest"
+
+[tasks.fmt]
+run = "gofmt -l -w -s ./"
+
+[tasks.vet]
+run = "go vet ./..."
+
+[tasks.lint]
+depends = ["vet", "fmt"]
+run = "mise exec -- golangci-lint run --modules-download-mode readonly --timeout=10m"
+
+[tasks.test]
+run = "go test -race ./..."
+description = "Run unit tests"
+
+[tasks."test:integration"]
+run = "go test -race -tags=integration ./internal/integration/..."
+description = "Run integration tests"
+
+[tasks."test:all"]
+depends = ["test", "test:integration"]
+description = "Run all tests"
+
+[tasks."test:cover"]
+run = "go test -race -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+description = "Run tests with coverage"
+
+[tasks.build]
+run = "go build -o tmp/ac ./cmd/ac"
+
+[tasks.dev]
+run = "air"
+
+[tasks."enforcer:test"]
+run = "docker compose -f enforcer/docker-compose.test.yml run --rm --build test"
+description = "Run all enforcer tests in a privileged container (includes BPF integration)"
+
+[tasks."enforcer:test:bpf"]
+run = "docker compose -f enforcer/docker-compose.test.yml run --rm --build test-bpf-only"
+description = "Run BPF integration tests only in a privileged container"

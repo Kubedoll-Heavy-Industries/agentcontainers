@@ -1,0 +1,26 @@
+# Exclude build artifacts
+target/
+
+# Exclude git metadata
+.git
+.gitignore
+
+# Exclude documentation (not needed in container)
+*.md
+README.md
+LICENSE
+
+# Exclude IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Exclude CI/CD configs
+.github/
+.gitlab-ci.yml
+
+# Exclude test artifacts
+*.log
+*.out

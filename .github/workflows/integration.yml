@@ -1,0 +1,82 @@
+name: integration tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'enforcer/**'
+      - 'internal/cli/run.go'
+      - 'internal/cli/exec.go'
+      - 'internal/cli/build.go'
+      - 'internal/cli/policy.go'
+      - 'internal/container/docker.go'
+      - 'internal/container/runtime.go'
+      - 'internal/orgpolicy/extract.go'
+      - 'internal/oci/fetch.go'
+      - 'internal/oci/push.go'
+      - 'internal/enforcement/grpc.go'
+      - 'internal/secrets/**'
+      - 'test/integration/**'
+  pull_request:
+    paths:
+      - 'enforcer/**'
+      - 'internal/cli/run.go'
+      - 'internal/cli/exec.go'
+      - 'internal/cli/build.go'
+      - 'internal/cli/policy.go'
+      - 'internal/container/docker.go'
+      - 'internal/container/runtime.go'
+      - 'internal/orgpolicy/extract.go'
+      - 'internal/oci/fetch.go'
+      - 'internal/oci/push.go'
+      - 'internal/enforcement/grpc.go'
+      - 'internal/secrets/**'
+      - 'test/integration/**'
+  workflow_dispatch:
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+  pull-requests: read
+
+jobs:
+  integration:
+    name: integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            enforcer:
+              - 'enforcer/**'
+
+      - name: Pull pre-built enforcer image
+        if: steps.changes.outputs.enforcer != 'true'
+        run: docker pull ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest
+
+      - name: Build enforcer image (enforcer changed)
+        if: steps.changes.outputs.enforcer == 'true'
+        run: docker build -t ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest enforcer/
+
+      - name: Run integration tests
+        run: go test -race -tags=integration ./internal/integration/...

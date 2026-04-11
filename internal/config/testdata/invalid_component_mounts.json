@@ -1,0 +1,15 @@
+{
+  "name": "invalid-component-mounts",
+  "image": "ghcr.io/kubedoll/agent-base:latest",
+  "agent": {
+    "tools": {
+      "mcp": {
+        "bad-tool": {
+          "type": "component",
+          "image": "ghcr.io/mcp-tools/bad:latest",
+          "mounts": ["/host/path:/container/path"]
+        }
+      }
+    }
+  }
+}

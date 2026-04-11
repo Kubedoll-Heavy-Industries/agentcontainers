@@ -1,0 +1,10 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/ac ./cmd/ac"
+delay = 1000
+entrypoint = ["./tmp/ac"]
+exclude_dir = ["assets", "tmp", "vendor", "testdata", "prd"]
+exclude_regex = ["_test\\.go"]

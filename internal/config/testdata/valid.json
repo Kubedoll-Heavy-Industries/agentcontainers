@@ -1,0 +1,54 @@
+{
+  "name": "full-agent-container",
+  "image": "ghcr.io/kubedoll/agent-base:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "mounts": [
+    "source=workspace,target=/workspace,type=volume"
+  ],
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**"],
+        "write": ["/workspace/output/**"],
+        "deny": ["/workspace/.env"]
+      },
+      "network": {
+        "egress": [
+          {"host": "api.github.com", "port": 443, "protocol": "tcp"},
+          {"host": "registry.npmjs.org", "port": 443}
+        ],
+        "deny": ["*.internal.corp"]
+      },
+      "shell": {
+        "commands": [
+          {"binary": "git", "subcommands": ["clone", "pull", "push"], "denyArgs": ["--force"]},
+          {"binary": "npm", "subcommands": ["install", "test"]},
+          {"binary": "go", "subcommands": ["build", "test"]}
+        ]
+      },
+      "git": {
+        "branches": {
+          "push": ["feature/*", "fix/*"],
+          "deny": ["main", "release/*"]
+        }
+      }
+    },
+    "tools": {
+      "mcp": {
+        "helm": {
+          "image": "ghcr.io/kubedoll/mcp-helm:latest",
+          "capabilities": ["helm.install", "helm.upgrade"],
+          "secrets": ["KUBECONFIG"]
+        }
+      },
+      "skills": {
+        "code-review": {
+          "artifact": "ghcr.io/kubedoll/skills/code-review:v1",
+          "trust": "signed"
+        }
+      }
+    },
+  }
+}

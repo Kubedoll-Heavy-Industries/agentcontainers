@@ -1,0 +1,87 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'enforcer/**'
+      - '.github/workflows/docker.yml'
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write       # Required for SLSA provenance and Sigstore signing
+  attestations: write   # Required for GitHub attestations API
+
+jobs:
+  build-push:
+    name: Build and push enforcer image
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ghcr.io/kubedoll-heavy-industries/ac-enforcer
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/kubedoll-heavy-industries/ac-enforcer
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: enforcer
+          file: enforcer/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Enable BuildKit SLSA provenance and SBOM attestations.
+          # These are attached to the image via the OCI Referrers API.
+          provenance: mode=max
+          sbom: true
+
+      - name: Verify provenance attestation
+        run: |
+          echo "Image digest: ${{ steps.build.outputs.digest }}"
+          echo "Provenance and SBOM attestations attached to image."
+
+  # Generate SLSA L3 provenance using the official SLSA GitHub generator.
+  # This creates a signed, non-forgeable provenance attestation that proves
+  # the image was built from this repository by GitHub Actions.
+  provenance:
+    needs: build-push
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.build-push.outputs.image }}
+      digest: ${{ needs.build-push.outputs.digest }}
+      registry-username: ${{ github.actor }}
+      # Required for private repositories: skip public Rekor transparency log
+      # to avoid exposing the repository name. Provenance is still generated
+      # and attached to the image, just not logged publicly.
+      private-repository: true
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}

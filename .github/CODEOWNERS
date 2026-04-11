@@ -1,0 +1,23 @@
+# CODEOWNERS — defines code ownership for review routing
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Go CLI and core packages
+/cmd/                     @Kubedoll-Heavy-Industries/kubedoll-engineering
+/internal/cli/            @Kubedoll-Heavy-Industries/kubedoll-engineering
+/internal/config/         @Kubedoll-Heavy-Industries/kubedoll-engineering
+/internal/container/      @Kubedoll-Heavy-Industries/kubedoll-engineering
+/internal/policy/         @Kubedoll-Heavy-Industries/kubedoll-engineering
+/internal/enforcement/    @Kubedoll-Heavy-Industries/kubedoll-engineering
+
+# Rust enforcer
+/enforcer/                @Kubedoll-Heavy-Industries/kubedoll-engineering
+
+# CI/CD and supply chain
+/.github/                 @Kubedoll-Heavy-Industries/kubedoll-engineering
+/.goreleaser.yml          @Kubedoll-Heavy-Industries/kubedoll-engineering
+/release-please-config.json @Kubedoll-Heavy-Industries/kubedoll-engineering
+
+# Specifications
+/SPEC.md                  @Kubedoll-Heavy-Industries/kubedoll-engineering
+/ROADMAP.md               @Kubedoll-Heavy-Industries/kubedoll-engineering
+/prd/                     @Kubedoll-Heavy-Industries/kubedoll-engineering

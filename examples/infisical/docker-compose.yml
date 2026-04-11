@@ -1,0 +1,43 @@
+# Local Infisical instance for development and testing.
+# See https://infisical.com/docs/self-hosting/deployment-options/docker-compose
+#
+# Usage:
+#   docker compose up -d
+#   Open http://localhost:8080 to complete setup
+#   Then run ./setup.sh to configure Machine Identity
+
+services:
+  infisical:
+    image: infisical/infisical:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ENCRYPTION_KEY=replace-with-a-random-32-char-hex-string
+      - AUTH_SECRET=replace-with-a-random-secret-for-jwt
+      - SITE_URL=http://localhost:8080
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mongo-data:

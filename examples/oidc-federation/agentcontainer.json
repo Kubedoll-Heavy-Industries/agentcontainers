@@ -1,0 +1,77 @@
+{
+  // OIDC federation example — zero-infrastructure credential federation.
+  // The ac runtime's built-in OIDC issuer mints JWTs that cloud providers
+  // (AWS, GCP) consume via their existing OIDC federation support.
+  // No Vault, no SPIRE, no external dependencies.
+  "name": "oidc-federation-agent",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**", "/run/secrets/**"],
+        "write": ["/workspace/**"]
+      },
+      "network": {
+        "egress": [
+          { "host": "api.github.com", "port": 443 },
+          { "host": "s3.amazonaws.com", "port": 443 },
+          { "host": "*.s3.amazonaws.com", "port": 443 },
+          { "host": "sts.amazonaws.com", "port": 443 },
+          { "host": "storage.googleapis.com", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "aws s3 ls",
+          "aws s3 cp",
+          "gcloud storage ls",
+          "gcloud storage cp",
+          "git status",
+          "git diff"
+        ]
+      }
+    },
+
+    "secrets": {
+      // AWS credentials via OIDC federation.
+      // The ac OIDC issuer mints a JWT, then calls AWS STS
+      // AssumeRoleWithWebIdentity to get temporary credentials.
+      "AWS_SESSION": {
+        "provider": "oidc",
+        "audience": "sts.amazonaws.com",
+        "role": "arn:aws:iam::123456789012:role/agent-s3-readonly",
+        "ttl": "15m",
+        "rotation": "12m",
+        "scope": ["s3:GetObject", "s3:PutObject"]
+      },
+
+      // GCP credentials via Workload Identity Federation.
+      // The ac OIDC issuer mints a JWT, then exchanges it for
+      // a GCP access token via STS token exchange.
+      "GCP_TOKEN": {
+        "provider": "oidc",
+        "audience": "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/agent-pool/providers/ac-provider",
+        "role": "projects/123456789/serviceAccounts/agent-sa@my-project.iam.gserviceaccount.com",
+        "ttl": "1h",
+        "rotation": "55m",
+        "scope": ["https://www.googleapis.com/auth/devstorage.read_write"]
+      },
+
+      // GitHub installation token via OIDC + GitHub App.
+      "GITHUB_TOKEN": {
+        "provider": "oidc",
+        "audience": "github.com",
+        "ttl": "1h",
+        "scope": ["repo:read", "issues:write"],
+        "allowedTools": ["mcp-github"]
+      }
+    },
+
+    "policy": {
+      "escalation": "prompt",
+      "auditLog": true,
+      "sessionTimeout": "2h"
+    }
+  }
+}

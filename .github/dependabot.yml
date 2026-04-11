@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      docker-sdk:
+        patterns: ["github.com/moby/*", "github.com/docker/*"]
+      cobra-cli:
+        patterns: ["github.com/spf13/*"]
+
+  - package-ecosystem: "cargo"
+    directory: "/enforcer"
+    schedule:
+      interval: "weekly"
+    groups:
+      opentelemetry:
+        patterns: ["opentelemetry*", "tracing-opentelemetry"]
+      aya:
+        patterns: ["aya*"]
+      wasmtime:
+        patterns: ["wasmtime*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

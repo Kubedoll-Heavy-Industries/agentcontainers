@@ -1,0 +1,31 @@
+# Stub enforcer image for integration testing.
+# Builds the gRPC server WITHOUT BPF programs — uses StubPolicyManager
+# which accepts all policy RPCs and InjectSecrets (filesystem operations only).
+#
+# Usage:
+#   docker build -f Dockerfile.stub -t ac-enforcer:test .
+#
+# This image is NOT suitable for production — it has no BPF enforcement.
+# Use the main Dockerfile for production builds.
+
+FROM rust:1.93-bookworm AS builder
+
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+# Skip BPF build — the stub enforcer doesn't load BPF programs.
+ENV AYA_BUILD_SKIP=1
+
+RUN cargo build --release -p ac-enforcer
+
+FROM debian:bookworm-slim
+
+COPY --from=builder /build/target/release/ac-enforcer /usr/local/bin/ac-enforcer
+RUN chmod 755 /usr/local/bin/ac-enforcer
+
+EXPOSE 50051
+
+ENTRYPOINT ["/usr/local/bin/ac-enforcer"]
+CMD ["--listen", "0.0.0.0:50051"]

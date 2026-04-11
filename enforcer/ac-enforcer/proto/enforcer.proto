@@ -1,0 +1,273 @@
+syntax = "proto3";
+package agentcontainers.enforcer.v1;
+option go_package = "github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/enforcerapi";
+
+// The Enforcer service manages BPF-based security enforcement for
+// agentcontainer sessions. The Go CLI communicates with this service
+// to apply per-container policies across all 6 security boundary classes.
+
+service Enforcer {
+  // Container lifecycle — register/unregister cgroups for enforcement.
+  rpc RegisterContainer(RegisterContainerRequest) returns (RegisterContainerResponse);
+  rpc UnregisterContainer(UnregisterContainerRequest) returns (UnregisterContainerResponse);
+
+  // Per-boundary-class policy application.
+  rpc ApplyNetworkPolicy(NetworkPolicyRequest) returns (PolicyResponse);
+  rpc ApplyFilesystemPolicy(FilesystemPolicyRequest) returns (PolicyResponse);
+  rpc ApplyProcessPolicy(ProcessPolicyRequest) returns (PolicyResponse);
+  rpc ApplyCredentialPolicy(CredentialPolicyRequest) returns (PolicyResponse);
+  rpc InjectSecrets(InjectSecretsRequest) returns (InjectSecretsResponse);
+
+  // Policy bundle — content trust for ACL re-derivation.
+  // Must be called before ApplyCredentialPolicy.  The enforcer stores a hash
+  // of the policy JSON so that subsequent ApplyCredentialPolicy calls can be
+  // verified against the signed policy.
+  rpc LoadPolicyBundle(LoadPolicyBundleRequest) returns (LoadPolicyBundleResponse);
+
+  // Observability.
+  rpc StreamEvents(StreamEventsRequest) returns (stream EnforcementEvent);
+  rpc GetStats(GetStatsRequest) returns (StatsResponse);
+
+  // WASM Component lifecycle.
+  rpc LoadComponent(LoadComponentRequest) returns (LoadComponentResponse);
+  rpc UnloadComponent(UnloadComponentRequest) returns (UnloadComponentResponse);
+  rpc ListComponents(ListComponentsRequest) returns (ListComponentsResponse);
+
+  // Tool invocation.
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+  rpc CallTool(CallToolRequest) returns (CallToolResponse);
+}
+
+// --- Container lifecycle ---
+
+message RegisterContainerRequest {
+  string container_id = 1;
+  string cgroup_path = 2;
+  uint32 init_pid = 3;
+}
+
+message RegisterContainerResponse {
+  uint64 cgroup_id = 1;
+}
+
+message UnregisterContainerRequest {
+  string container_id = 1;
+}
+
+message UnregisterContainerResponse {}
+
+// --- Network policy ---
+
+message NetworkPolicyRequest {
+  string container_id = 1;
+  repeated string allowed_hosts = 2;
+  repeated EgressRule egress_rules = 3;
+  repeated string dns_servers = 4;
+}
+
+message EgressRule {
+  string host = 1;
+  uint32 port = 2;
+  string protocol = 3; // "tcp", "udp"
+}
+
+// --- Filesystem policy ---
+
+message FilesystemPolicyRequest {
+  string container_id = 1;
+  repeated string read_paths = 2;
+  repeated string write_paths = 3;
+  repeated string deny_paths = 4;
+}
+
+// --- Process policy ---
+
+message ProcessPolicyRequest {
+  string container_id = 1;
+  repeated string allowed_binaries = 2;
+}
+
+// --- Credential policy ---
+
+message SecretEntry {
+  string name = 1;
+  bytes  value = 2;
+  uint32 mode = 3;  // file permissions, default 0400 if 0
+}
+
+message InjectSecretsRequest {
+  string container_id = 1;
+  repeated SecretEntry secrets = 2;
+  string base_path = 3;  // default "/run/secrets" if empty
+}
+
+message InjectSecretsResponse {
+  bool success = 1;
+  string error = 2;
+  uint32 injected_count = 3;
+}
+
+message CredentialPolicyRequest {
+  string container_id = 1;
+  repeated SecretAcl secret_acls = 2;
+}
+
+message SecretAcl {
+  string path = 1;
+  repeated string allowed_tools = 2;
+  uint64 ttl_seconds = 3;
+}
+
+// --- Policy bundle (content trust / ACL re-derivation) ---
+
+// LoadPolicyBundleRequest delivers a signed policy to the enforcer so it can
+// re-derive ACLs from the image-embedded policy rather than trusting caller-
+// supplied ACLs verbatim.
+//
+// The enforcer:
+//  1. Stores sha256(policy_json) as the "policy digest" for the container.
+//  2. On subsequent ApplyCredentialPolicy calls, verifies the provided ACLs
+//     are consistent with the policy digest (hash-match stub; full Sigstore
+//     verification is a follow-up).
+//
+// image_digest, cosign_signature, cosign_cert_chain are reserved for future
+// Sigstore verification; the server ignores them for now but callers should
+// populate them for forward-compatibility.
+message LoadPolicyBundleRequest {
+  string container_id    = 1;
+  bytes  policy_json     = 2;  // Raw JSON of the OrgPolicy / PolicyBundle
+  string image_digest    = 3;  // OCI image digest (sha256:...) — reserved
+  bytes  cosign_signature  = 4;  // Cosign detached signature — reserved
+  bytes  cosign_cert_chain = 5;  // Cosign cert chain PEM — reserved
+}
+
+message LoadPolicyBundleResponse {
+  bool   success       = 1;
+  string error         = 2;
+  string policy_digest = 3;  // sha256:<hex> of the accepted policy_json
+}
+
+// --- Responses ---
+
+message PolicyResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// --- Events ---
+
+message StreamEventsRequest {
+  string container_id = 1; // Empty = all containers.
+}
+
+message EnforcementEvent {
+  uint64 timestamp_ns = 1;
+  string container_id = 2;
+  string domain = 3;       // "network", "filesystem", "process", "credential"
+  string verdict = 4;      // "allow", "block"
+  uint32 pid = 5;
+  string comm = 6;
+  map<string, string> details = 7;
+}
+
+// --- Stats ---
+
+message GetStatsRequest {
+  string container_id = 1; // Empty = aggregate.
+}
+
+message StatsResponse {
+  uint64 network_allowed = 1;
+  uint64 network_blocked = 2;
+  uint64 filesystem_allowed = 3;
+  uint64 filesystem_blocked = 4;
+  uint64 process_allowed = 5;
+  uint64 process_blocked = 6;
+  uint64 credential_allowed = 7;
+  uint64 credential_blocked = 8;
+}
+
+// --- WASM Component lifecycle ---
+
+message ComponentPolicy {
+  repeated string network_hosts = 1;   // Allowed outbound hosts
+  repeated string fs_read_paths = 2;   // WASI preopened read dirs
+  repeated string fs_write_paths = 3;  // WASI preopened write dirs
+  repeated string env_vars = 4;        // Allowed environment variables
+}
+
+message ComponentLimits {
+  uint64 memory_bytes = 1;   // Max linear memory (0 = default)
+  uint64 fuel = 2;           // Instruction budget (0 = unlimited)
+  uint64 timeout_ms = 3;     // Wall-clock timeout per call (0 = no timeout)
+}
+
+message ToolDefinition {
+  string component_name = 1;
+  string tool_name = 2;
+  string description = 3;
+  string input_schema_json = 4;  // JSON Schema for parameters
+}
+
+message LoadComponentRequest {
+  string container_id = 1;      // Parent container scope
+  string component_name = 2;    // Logical name (e.g., "time-server")
+  string oci_reference = 3;     // OCI image ref or digest (future: Phase C)
+  bytes  wasm_bytes = 4;        // Raw WASM bytes (Phase A: local load)
+  ComponentPolicy policy = 5;   // WASI capability grants
+  ComponentLimits limits = 6;   // Resource limits
+}
+
+message LoadComponentResponse {
+  bool   success = 1;
+  string error = 2;
+  repeated ToolDefinition tools = 3;  // Auto-discovered tools
+}
+
+message UnloadComponentRequest {
+  string container_id = 1;
+  string component_name = 2;
+}
+
+message UnloadComponentResponse {}
+
+message ListComponentsRequest {
+  string container_id = 1;  // Empty = all containers
+}
+
+message ComponentInfo {
+  string container_id = 1;
+  string component_name = 2;
+  string oci_reference = 3;
+  repeated ToolDefinition tools = 4;
+}
+
+message ListComponentsResponse {
+  repeated ComponentInfo components = 1;
+}
+
+// --- Tool invocation ---
+
+message ListToolsRequest {
+  string container_id = 1;
+  string component_name = 2;  // Empty = all components in container
+}
+
+message ListToolsResponse {
+  repeated ToolDefinition tools = 1;
+}
+
+message CallToolRequest {
+  string container_id = 1;
+  string component_name = 2;
+  string tool_name = 3;
+  string arguments_json = 4;  // JSON-encoded arguments
+}
+
+message CallToolResponse {
+  bool   success = 1;
+  string error = 2;
+  string result_json = 3;          // JSON-encoded result
+  uint64 execution_time_ns = 4;    // Wall-clock execution time
+  uint64 fuel_consumed = 5;        // Instructions consumed
+}

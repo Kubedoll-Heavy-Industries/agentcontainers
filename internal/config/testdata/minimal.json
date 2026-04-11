@@ -1,0 +1,4 @@
+{
+  "name": "minimal-container",
+  "image": "ubuntu:24.04"
+}

@@ -1,0 +1,68 @@
+{
+  // Infisical secrets provider example.
+  // Uses Machine Identity with Universal Auth for headless secret fetching.
+  // Secrets are fetched from Infisical's API and injected into /run/secrets/.
+  "name": "infisical-agent",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**", "/run/secrets/**"],
+        "write": ["/workspace/**"]
+      },
+      "network": {
+        "egress": [
+          { "host": "api.github.com", "port": 443 },
+          { "host": "registry.npmjs.org", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "npm install",
+          "npm test",
+          "git status",
+          "git diff"
+        ]
+      }
+    },
+
+    "secrets": {
+      // API key managed in Infisical.
+      // Path follows Infisical's folder structure: /<folder>/<secret-name>
+      "API_KEY": {
+        "provider": "infisical",
+        "path": "/api-keys/service-x",
+        "scope": ["prod"],
+        "ttl": "1h",
+        "rotation": "55m"
+      },
+
+      // Database credentials from Infisical.
+      "DB_PASSWORD": {
+        "provider": "infisical",
+        "path": "/databases/staging-postgres",
+        "key": "password",
+        "scope": ["staging"],
+        "ttl": "1h",
+        "allowedTools": ["mcp-postgres"]
+      },
+
+      // Third-party service token.
+      "STRIPE_KEY": {
+        "provider": "infisical",
+        "path": "/payments/stripe",
+        "key": "secret_key",
+        "scope": ["prod"],
+        "ttl": "4h",
+        "allowedTools": ["mcp-stripe"]
+      }
+    },
+
+    "policy": {
+      "escalation": "prompt",
+      "auditLog": true,
+      "sessionTimeout": "4h"
+    }
+  }
+}

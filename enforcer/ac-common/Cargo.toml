@@ -1,0 +1,24 @@
+[package]
+name = "ac-common"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types between ac-ebpf (BPF programs) and ac-enforcer (userspace)"
+
+# This crate must be no_std compatible so it can be used in BPF programs.
+# The "user" feature enables std-dependent functionality for the userspace side.
+[features]
+default = []
+user = ["std", "dep:serde", "dep:serde_json"]
+std = []
+
+[dependencies]
+# No dependencies by default — this crate is no_std for BPF compatibility.
+siphasher = { version = "1", default-features = false }
+# Serde is only used in the userspace ("user") feature for policy bundle serialization.
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+
+# aya is only available on Linux (uses netlink, BPF syscalls).
+# Needed for Pod trait impls on map key/value types.
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = { workspace = true }

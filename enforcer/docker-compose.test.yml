@@ -1,0 +1,38 @@
+# BPF integration test runner.
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml run --rm --build test
+#   docker compose -f docker-compose.test.yml run --rm --build test-bpf-only
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+    # Run all tests (unit + integration).
+    command: ["cargo", "test", "--", "--nocapture"]
+
+  test-bpf-only:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+    # Run only BPF integration tests.
+    command: ["cargo", "test", "--test", "bpf_integration", "--", "--nocapture"]
+
+  test-grpc:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["cargo", "test", "--test", "grpc_integration", "--", "--nocapture"]

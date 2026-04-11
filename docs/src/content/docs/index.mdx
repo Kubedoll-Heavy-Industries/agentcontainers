@@ -1,0 +1,32 @@
+---
+title: agentcontainers
+description: Immutable, reproducible, least-privilege runtime environments for AI agents.
+template: splash
+hero:
+  tagline: Immutable, reproducible, least-privilege runtime environments for AI agents.
+  actions:
+    - text: Get Started
+      link: /getting-started/quickstart/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/Kubedoll-Heavy-Industries/agentcontainers
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Extend devcontainers" icon="document">
+    `agentcontainer.json` is a strict superset of `devcontainer.json`. Any valid devcontainer works out of the box with default-deny agent capabilities.
+  </Card>
+  <Card title="Declare capabilities" icon="setting">
+    Define what your agent can access: network endpoints, filesystem paths, shell commands, git operations. Everything else is denied.
+  </Card>
+  <Card title="Kernel-level enforcement" icon="approve-check">
+    A Rust eBPF sidecar enforces policy at the kernel level via cgroup-scoped BPF hooks. No userspace bypass possible.
+  </Card>
+  <Card title="Secrets with zero infrastructure" icon="seti:lock">
+    Built-in OIDC issuer for AWS/GCP/GitHub federation. Pluggable providers for Vault, 1Password, and Infisical. All secrets injected via tmpfs with TTL rotation.
+  </Card>
+</CardGrid>

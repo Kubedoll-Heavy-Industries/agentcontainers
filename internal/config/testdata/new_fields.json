@@ -1,0 +1,54 @@
+{
+  "name": "new-fields-test",
+  "image": "alpine:3",
+  "agent": {
+    "capabilities": {
+      "shell": {
+        "commands": [
+          {
+            "binary": "bash",
+            "subcommands": ["run"],
+            "args": ["--file", "*.sh"],
+            "denyArgs": ["--exec"],
+            "scriptValidation": "ast"
+          }
+        ]
+      },
+      "git": {
+        "operations": ["clone", "pull", "push"],
+        "branches": {
+          "push": ["feature/*"],
+          "deny": ["main"]
+        }
+      }
+    },
+    "tools": {
+      "mcp": {
+        "helm": {
+          "image": "ghcr.io/kubedoll/mcp-helm:latest",
+          "capabilities": ["helm.install"],
+          "secrets": ["KUBECONFIG"],
+          "mounts": ["/home/user/.kube:/root/.kube:ro"]
+        }
+      },
+      "skills": {
+        "code-review": {
+          "artifact": "ghcr.io/kubedoll/skills/code-review:v1",
+          "trust": "signed",
+          "requires": ["filesystem.read", "network.egress"]
+        }
+      }
+    },
+    "secrets": {
+      "VAULT_TOKEN": {
+        "provider": "vault",
+        "audience": "https://vault.internal",
+        "ttl": "30m",
+        "scope": ["read:secrets"],
+        "rotation": "24h",
+        "role": "agent-reader",
+        "path": "secret/data/agent"
+      }
+    }
+  }
+}

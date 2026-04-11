@@ -1,0 +1,18 @@
+{
+  "name": "invalid-container-limits",
+  "image": "ghcr.io/kubedoll/agent-base:latest",
+  "agent": {
+    "tools": {
+      "mcp": {
+        "bad-tool": {
+          "type": "container",
+          "image": "ghcr.io/mcp-tools/bad:latest",
+          "limits": {
+            "memory_mb": 64,
+            "timeout_ms": 5000
+          }
+        }
+      }
+    }
+  }
+}

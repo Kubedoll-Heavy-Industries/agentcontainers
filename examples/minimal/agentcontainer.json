@@ -1,0 +1,48 @@
+{
+  // Minimal agentcontainer.json — simplest valid configuration.
+  // Any devcontainer.json is a valid agentcontainer.json with default-deny
+  // agent capabilities. This example adds basic capabilities.
+  "name": "minimal-agent",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "agent": {
+    "capabilities": {
+      "filesystem": {
+        "read": ["/workspace/**"],
+        "write": ["/workspace/**"],
+        "deny": ["/workspace/.env", "/workspace/.git/config"]
+      },
+      "network": {
+        "egress": [
+          { "host": "registry.npmjs.org", "port": 443 },
+          { "host": "api.github.com", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": [
+          "npm install",
+          "npm test",
+          "npm run build",
+          "git status",
+          "git diff",
+          "git add",
+          "git commit"
+        ]
+      },
+      "git": {
+        "operations": ["clone", "fetch", "pull", "push", "commit"],
+        "branches": {
+          "push": ["feature/*", "fix/*"],
+          "deny": ["main", "release/*"]
+        }
+      }
+    },
+    "policy": {
+      "escalation": "prompt",
+      "auditLog": true,
+      "sessionTimeout": "4h",
+      "maxConcurrentTools": 3,
+      "onCapabilityViolation": "deny"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+name: Rust
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'enforcer/**'
+      - '.github/workflows/rust.yml'
+      - '.github/actions/setup-rust-bpf/**'
+  pull_request:
+    paths:
+      - 'enforcer/**'
+      - '.github/workflows/rust.yml'
+      - '.github/actions/setup-rust-bpf/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-rust-bpf
+        with:
+          components: clippy,rustfmt
+
+      - name: cargo fmt check
+        run: cargo fmt --manifest-path enforcer/Cargo.toml --all -- --check
+
+      - name: cargo check
+        run: cargo check --manifest-path enforcer/Cargo.toml
+
+      - name: cargo clippy
+        run: cargo clippy --manifest-path enforcer/Cargo.toml -- -D warnings
+
+      - name: Unit tests
+        run: |
+          cargo test --manifest-path enforcer/Cargo.toml -p ac-common
+          cargo test --manifest-path enforcer/Cargo.toml -p ac-enforcer --lib
+
+      # BPF integration tests require CONFIG_BPF_LSM=y which GHA runners
+      # don't have. Run these on self-hosted runners or locally with:
+      #   sudo cargo test -p ac-enforcer --test bpf_integration
+      #
+      # gRPC integration tests require Docker for testcontainers.
+      # Run locally with: cargo test -p ac-enforcer --test grpc_integration

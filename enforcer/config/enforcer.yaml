@@ -1,0 +1,12 @@
+# ac-enforcer configuration
+listen:
+  grpc: "0.0.0.0:50051"
+  socket: "/run/ac-enforcer/ac-enforcer.sock"
+
+logging:
+  level: info
+  format: json
+
+enforcement:
+  max_containers: 1024
+  event_buffer_size: 262144  # 256KB ring buffer

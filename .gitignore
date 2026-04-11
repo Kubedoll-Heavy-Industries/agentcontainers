@@ -1,0 +1,38 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Coverage
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace
+go.work
+go.work.sum
+
+# Environment
+.env
+
+# Editor/IDE
+.idea
+tmp/
+
+# Built binary
+/ac
+
+# OS files
+.DS_Store
+
+# Claude Code local settings (user-specific, not committed)
+.claude/settings.local.json
+
+# Git worktrees
+.worktrees/

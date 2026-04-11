@@ -1,0 +1,22 @@
+// This is a JSONC file with comments and trailing commas.
+{
+  // Container name
+  "name": "commented-container",
+  "image": "node:22-bookworm", // inline comment
+  "agent": {
+    "capabilities": {
+      "shell": {
+        "commands": [
+          // Allow git and npm
+          {"binary": "git"},
+          {"binary": "npm"},
+        ],
+      },
+      "network": {
+        "egress": [
+          {"host": "registry.npmjs.org", "port": 443},
+        ],
+      },
+    },
+  },
+}

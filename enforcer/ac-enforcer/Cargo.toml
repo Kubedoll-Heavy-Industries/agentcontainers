@@ -1,0 +1,66 @@
+[package]
+name = "ac-enforcer"
+version = "0.1.0"
+edition = "2021"
+description = "Userspace BPF enforcer for agentcontainers — loads BPF programs, manages maps, serves gRPC"
+
+[dependencies]
+ac-common = { workspace = true, features = ["user"] }
+tokio = { workspace = true }
+tonic = { workspace = true }
+rcgen = { workspace = true }
+tonic-prost = "0.14"
+prost = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio-stream = { workspace = true }
+tonic-health = { workspace = true }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+# OpenTelemetry + OpenInference (optional, behind "otel" feature)
+opentelemetry = { workspace = true, optional = true }
+opentelemetry_sdk = { workspace = true, optional = true }
+opentelemetry-otlp = { workspace = true, optional = true }
+tracing-opentelemetry = { workspace = true, optional = true }
+openinference-semantic-conventions = { workspace = true, optional = true }
+openinference-instrumentation = { workspace = true, optional = true }
+
+# Linux-only: BPF loader and log integration.
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = { workspace = true }
+aya-log = { workspace = true }
+libc = "0.2"
+
+[features]
+default = []
+otel = [
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:opentelemetry-otlp",
+    "dep:tracing-opentelemetry",
+    "dep:openinference-semantic-conventions",
+    "dep:openinference-instrumentation",
+]
+
+[dev-dependencies]
+serial_test = "3"
+tempfile = "3"
+testcontainers = "0.27"
+tonic-health = { workspace = true }
+tokio = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["testing"] }
+tracing-opentelemetry = { workspace = true }
+openinference-instrumentation = { workspace = true }
+openinference-semantic-conventions = { workspace = true }
+
+[build-dependencies]
+tonic-build = "0.14"
+tonic-prost-build = "0.14"
+aya-build = "0.1"
+anyhow = "1"

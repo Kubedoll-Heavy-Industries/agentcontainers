@@ -1,0 +1,30 @@
+{
+  "requireSignatures": true,
+  "requireSBOM": true,
+  "minSLSALevel": 2,
+  "trustedRegistries": [
+    "ghcr.io/your-org/*",
+    "mcr.microsoft.com/devcontainers/*"
+  ],
+  "bannedPackages": [
+    "pkg:npm/event-stream@3.3.6",
+    "pkg:npm/ua-parser-js@0.7.29"
+  ],
+  "allowedCapabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "network.egress",
+    "shell.commands",
+    "git.operations"
+  ],
+  "deniedCapabilities": [
+    "network.listen",
+    "shell.sudo"
+  ],
+  "allowedMCPImages": [
+    "ghcr.io/your-org/mcp-tools/",
+    "ghcr.io/modelcontextprotocol/servers/"
+  ],
+  "maxAge": "7d",
+  "maxDriftThreshold": 0.1
+}

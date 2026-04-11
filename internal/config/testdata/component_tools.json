@@ -1,0 +1,32 @@
+{
+  "name": "component-tools-test",
+  "image": "ghcr.io/kubedoll/agent-base:latest",
+  "agent": {
+    "tools": {
+      "mcp": {
+        "time-server": {
+          "type": "component",
+          "image": "ghcr.io/microsoft/time-server-js:latest",
+          "capabilities": ["network:worldtimeapi.org"],
+          "limits": {
+            "memory_mb": 64,
+            "timeout_ms": 5000,
+            "fuel": 1000000
+          }
+        },
+        "github-api": {
+          "type": "component",
+          "image": "ghcr.io/mcp-tools/github:2.1@sha256:def456abc",
+          "capabilities": ["network:api.github.com"],
+          "secrets": ["github-token"]
+        },
+        "postgres": {
+          "type": "container",
+          "image": "ghcr.io/mcp-tools/postgres-server:latest",
+          "capabilities": ["network:db.internal:5432"],
+          "mounts": ["/data/pg:/var/lib/postgresql/data"]
+        }
+      }
+    }
+  }
+}

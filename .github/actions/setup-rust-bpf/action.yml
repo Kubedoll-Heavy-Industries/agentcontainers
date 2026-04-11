@@ -1,0 +1,44 @@
+name: Setup Rust BPF Toolchain
+description: Install Rust stable + nightly, bpf-linker, protobuf compiler, and configure caching
+
+inputs:
+  components:
+    description: Additional rustup components to install (e.g., "clippy")
+    required: false
+    default: ""
+  workspaces:
+    description: Cargo workspace paths for rust-cache
+    required: false
+    default: "enforcer"
+
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: ${{ inputs.components }}
+
+    - name: Install nightly with rust-src for aya-build
+      shell: bash
+      run: rustup toolchain install nightly --component rust-src
+
+    - name: Cache bpf-linker
+      id: cache-bpf-linker
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/bpf-linker
+        key: bpf-linker-${{ runner.os }}-${{ runner.arch }}
+
+    - name: Install bpf-linker
+      if: steps.cache-bpf-linker.outputs.cache-hit != 'true'
+      shell: bash
+      run: rustup run nightly cargo install bpf-linker
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: ${{ inputs.workspaces }}
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - name: Install protobuf compiler
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
