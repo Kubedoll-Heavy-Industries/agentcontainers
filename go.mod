@@ -5,8 +5,8 @@ go 1.25.6
 require (
 	github.com/google/uuid v1.6.0
 	github.com/moby/go-archive v0.2.0
-	github.com/moby/moby/api v1.53.0
-	github.com/moby/moby/client v0.2.2
+	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/client v0.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
