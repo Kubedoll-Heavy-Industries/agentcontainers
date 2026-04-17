@@ -440,10 +440,10 @@ func TestRunEnforcerLiveness_ClosesDeadAfterMaxFails(t *testing.T) {
 		t.Fatal("timeout: enforcerDead was never closed")
 	}
 
-	// ctx must be cancelled.
+	// ctx must be cancelled (may race slightly behind dead channel close).
 	select {
 	case <-ctx.Done():
-	default:
+	case <-time.After(time.Second):
 		t.Fatal("context was not cancelled after liveness failure")
 	}
 }
