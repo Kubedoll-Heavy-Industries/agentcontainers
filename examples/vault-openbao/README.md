@@ -33,7 +33,7 @@ ac run --config agentcontainer.json .
 
 ## How It Works
 
-1. `ac run` reads the `secrets` block from `agentcontainer.json`
+1. `agentcontainer run` reads the `secrets` block from `agentcontainer.json`
 2. The Secrets Manager starts a Vault Agent sidecar alongside the agent container
 3. Vault Agent authenticates using the `ac` OIDC JWT (or AppRole in dev mode)
 4. Secrets are fetched and written to `/run/secrets/<NAME>` (tmpfs, mode 0400)

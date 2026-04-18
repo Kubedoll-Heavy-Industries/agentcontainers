@@ -26,7 +26,12 @@ go.work.sum
 tmp/
 
 # Built binary
-/ac
+/agentcontainer
+
+# Docs (Astro)
+docs/dist/
+docs/.astro/
+docs/node_modules/
 
 # OS files
 .DS_Store

@@ -40,12 +40,12 @@ ac run --config agentcontainer.json .
 
 ## How It Works
 
-1. Security team authors `policy.json` and publishes it with `ac policy push`
+1. Security team authors `policy.json` and publishes it with `agentcontainer policy push`
 2. Each workspace's `agentcontainer.json` references the policy via `orgPolicy`
-3. `ac lock` pins the policy by digest in `agentcontainer.lock`
-4. `ac run` fetches the policy, merges it with workspace config (deny wins)
-5. `ac verify` checks that all workspace artifacts comply with the policy
-6. If the locked policy is older than `maxAge`, `ac verify` flags it as stale
+3. `agentcontainer lock` pins the policy by digest in `agentcontainer.lock`
+4. `agentcontainer run` fetches the policy, merges it with workspace config (deny wins)
+5. `agentcontainer verify` checks that all workspace artifacts comply with the policy
+6. If the locked policy is older than `maxAge`, `agentcontainer verify` flags it as stale
 
 ## Policy Merge Rules
 
@@ -72,7 +72,7 @@ ac policy diff policy.json ghcr.io/your-org/agent-policy:latest
 # Push the update (creates a new OCI tag)
 ac policy push policy.json ghcr.io/your-org/agent-policy:latest
 
-# All workspaces pick up the new policy on next `ac lock` or `ac run`
+# All workspaces pick up the new policy on next `agentcontainer lock` or `agentcontainer run`
 ```
 
 ## Production Notes
@@ -80,4 +80,4 @@ ac policy push policy.json ghcr.io/your-org/agent-policy:latest
 - Pin the `orgPolicy` reference by digest for reproducibility: `ghcr.io/your-org/agent-policy@sha256:abc...`
 - Use `maxAge` to force teams to refresh stale policies
 - The `bannedPackages` field uses Package URL (purl) format
-- Audit compliance across all repos with `ac audit --org your-org`
+- Audit compliance across all repos with `agentcontainer audit --org your-org`

@@ -12,7 +12,7 @@ Thank you for your interest in contributing. This document covers how to get set
 
 **Requirements:**
 
-- Go 1.23+
+- Go 1.26+
 - [mise](https://mise.jdx.dev/) — task runner and toolchain manager
 - Docker Desktop (macOS) or Docker Engine (Linux)
 - Rust toolchain (only needed if changing the enforcer in `enforcer/`)

@@ -191,6 +191,6 @@ func checkEnforcerHealth() diagCheck {
 	return diagCheck{
 		Name:   "Enforcer Health",
 		Status: "WARN",
-		Detail: fmt.Sprintf("not reachable at %s — start with: ac enforcer start", target),
+		Detail: fmt.Sprintf("not reachable at %s — start with: agentcontainer enforcer start", target),
 	}
 }

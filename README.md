@@ -46,7 +46,7 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 
 ### Prerequisites
 
-- Go 1.23+
+- Go 1.26+
 - Docker Desktop (macOS) or Docker Engine (Linux)
 - [mise](https://mise.jdx.dev/) for task running
 - `cosign` (optional, for signature verification)

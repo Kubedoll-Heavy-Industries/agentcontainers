@@ -61,7 +61,7 @@ op item create \
 
 ## How It Works
 
-1. `ac run` reads the `secrets` block from `agentcontainer.json`
+1. `agentcontainer run` reads the `secrets` block from `agentcontainer.json`
 2. The Secrets Manager invokes `op read <uri>` on the **host** for each secret
 3. 1Password desktop app prompts for biometric/2FA approval
 4. Resolved values are written to `/run/secrets/<NAME>` (tmpfs, mode 0400)

@@ -53,7 +53,7 @@ No bug bounty program at this time (pre-alpha).
 
 ```
 Host OS (trusted)
-└── ac runtime + enforcer sidecar (Trusted Computing Base)
+└── agentcontainer runtime + enforcer sidecar (Trusted Computing Base)
     └── Agent container (UNTRUSTED — treat as adversarial)
         └── Agent process, MCP servers, skills
 ```
