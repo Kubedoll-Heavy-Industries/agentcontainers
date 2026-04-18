@@ -48,9 +48,6 @@ All three must pass with no errors or warnings.
 | `internal/secrets/` | Secret URI parsing and provider implementations (Vault, 1Password, Infisical, OIDC, env). |
 | `internal/approval/` | Human-in-the-loop capability approval broker. |
 | `enforcer/` | Rust workspace: `agentcontainer-ebpf` (Aya BPF programs), `agentcontainer-enforcer` (Tokio gRPC server), `agentcontainer-common`. |
-| `SPEC.md` | Full specification (~1600 lines). The authoritative source of truth. |
-| `ROADMAP.md` | Milestone plan with status. |
-| `prd/` | Per-feature PRDs with detailed design. |
 
 ## Code Conventions
 
@@ -101,11 +98,7 @@ Coordinate with maintainers before modifying these.
 - **Reference issues.** Use `Fixes #123` or `Closes #123` in the PR body when applicable.
 - **Keep diffs readable.** Avoid mixing formatting changes with functional changes. If you need to reformat, do it in a separate commit.
 - **Tests required.** New functionality without tests will not be merged.
-- **Respect SPEC.md.** Changes to schema or policy behavior must be consistent with the spec. If you need to deviate, update the spec in the same PR and note the design decision.
-
-## Working With the Spec
-
-`SPEC.md` is the source of truth for all design decisions, schema definitions, and the threat model. PRDs in `prd/` elaborate on specific subsystems but must not contradict the spec. If you find a contradiction, the spec takes precedence — file an issue or fix the PRD.
+- **Schema consistency.** Changes to schema or policy behavior must be consistent with the type definitions in `internal/config/config.go`. If you need to change the schema, document the rationale in the PR.
 
 ## Rust / Enforcer
 

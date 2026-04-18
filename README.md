@@ -18,12 +18,12 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 | Threat | Mechanism |
 |--------|-----------|
 | Unapproved binary execution | Default-deny approval broker + eBPF enforcer |
-| Argument injection / subshell escapes | Six-layer defense-in-depth (AST → seccomp → eBPF → AppArmor → Falco) |
+| Argument injection / subshell escapes | Approval broker blocks known interpreter escape patterns (`-c`, `-e` flags) |
 | File access outside declared paths | Read-only root FS, explicit bind mounts |
 | Network exfiltration | cgroup-scoped BPF connect4/sendmsg hooks |
 | Credential theft | Secrets injected via tmpfs at `/run/secrets`; never in env vars |
-| Supply chain attacks on tools/skills | OCI-packaged, Sigstore-signed, SBOM-attested, digest-pinned |
-| Capability escalation without approval | Human-in-the-loop approval with capability diff |
+| Supply chain attacks on tools/skills | OCI-packaged, Sigstore-signed, digest-pinned |
+| Capability escalation without approval | Human-in-the-loop approval gating |
 
 ---
 
@@ -37,7 +37,7 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 | M1: Verify | Shipped | `agentcontainer lock/verify/shim/sbom/component`, lockfile, OCI digest pinning, WASM tool hosting |
 | M2: Sandbox | Shipped | Docker Sandbox VM backend, in-VM enforcement, compose-in-sandbox, multi-arch enforcer image |
 | M3: Attest | Shipped | `agentcontainer sign`, Sigstore integration, SLSA provenance, drift threshold enforcement, offline verification |
-| M4: Enterprise | Mostly complete | Org policy as OCI layer, secrets (Vault/Infisical/1Password/OIDC), per-MCP LSM credential enforcement |
+| M4: Enterprise | Mostly complete | Org policy as OCI layer, secrets (Vault/Infisical/1Password/OIDC), per-cgroup LSM credential enforcement |
 | M5: Ecosystem | Planning | VS Code extension, Firecracker backend, Linux K8s, MCP registry integration |
 
 ---
@@ -126,7 +126,7 @@ Any valid `devcontainer.json` is a valid `agentcontainer.json`. The `agent` key 
 }
 ```
 
-Full schema reference: [SPEC.md](./SPEC.md)
+Full schema reference: see the type definitions in [`internal/config/config.go`](./internal/config/config.go)
 
 ---
 
@@ -161,7 +161,7 @@ Full schema reference: [SPEC.md](./SPEC.md)
 
 Enforcement is **fail-closed**: if the enforcer sidecar is unavailable, the container does not start.
 
-For full architecture details, threat model, and design decisions: [SPEC.md](./SPEC.md)
+For the security model and threat analysis: [SECURITY.md](./SECURITY.md)
 
 ---
 
@@ -192,9 +192,6 @@ Repository layout:
 | `internal/orgpolicy/` | Org policy extraction, merge, comparison |
 | `internal/secrets/` | Secret provider implementations |
 | `enforcer/` | Rust: agentcontainer-ebpf (Aya BPF), agentcontainer-enforcer (Tokio gRPC) |
-| `SPEC.md` | Full specification (~1600 lines) |
-| `ROADMAP.md` | Milestone plan with status |
-| `prd/` | Per-feature PRDs |
 
 ---
 
