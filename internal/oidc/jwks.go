@@ -62,16 +62,6 @@ func thumbprint(key *ecdsa.PublicKey) string {
 	return base64.RawURLEncoding.EncodeToString(h[:])
 }
 
-// padLeft pads b with leading zeros to length size.
-func padLeft(b []byte, size int) []byte {
-	if len(b) >= size {
-		return b
-	}
-	padded := make([]byte, size)
-	copy(padded[size-len(b):], b)
-	return padded
-}
-
 // marshalJWKS serializes a JWKS to JSON.
 func marshalJWKS(jwks *JWKS) ([]byte, error) {
 	data, err := json.Marshal(jwks)
