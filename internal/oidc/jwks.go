@@ -25,15 +25,26 @@ type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
 
+// ecdsaCoordinates extracts the X and Y coordinates from an ECDSA P-256
+// public key using the uncompressed point encoding (0x04 || X || Y),
+// avoiding the deprecated key.X/key.Y fields.
+func ecdsaCoordinates(key *ecdsa.PublicKey) (x, y []byte) {
+	// Bytes returns the uncompressed point encoding: 0x04 || X || Y.
+	// For a valid P-256 key this cannot fail.
+	raw, _ := key.Bytes()
+	byteLen := (key.Params().BitSize + 7) / 8
+	return raw[1 : 1+byteLen], raw[1+byteLen:]
+}
+
 // NewJWKFromECDSA converts an ECDSA P-256 public key to JWK format.
 // The kid is a SHA-256 thumbprint of the JWK canonical form (RFC 7638).
 func NewJWKFromECDSA(key *ecdsa.PublicKey, kid string) *JWK {
-	byteLen := (key.Params().BitSize + 7) / 8
+	x, y := ecdsaCoordinates(key)
 	return &JWK{
 		Kty: "EC",
 		Crv: "P-256",
-		X:   base64.RawURLEncoding.EncodeToString(padLeft(key.X.Bytes(), byteLen)),
-		Y:   base64.RawURLEncoding.EncodeToString(padLeft(key.Y.Bytes(), byteLen)),
+		X:   base64.RawURLEncoding.EncodeToString(x),
+		Y:   base64.RawURLEncoding.EncodeToString(y),
 		Kid: kid,
 		Use: "sig",
 		Alg: "ES256",
@@ -43,22 +54,12 @@ func NewJWKFromECDSA(key *ecdsa.PublicKey, kid string) *JWK {
 // thumbprint computes the JWK thumbprint (RFC 7638) for an ECDSA P-256 key.
 // The canonical form for EC keys is: {"crv":"P-256","kty":"EC","x":"...","y":"..."}
 func thumbprint(key *ecdsa.PublicKey) string {
-	byteLen := (key.Params().BitSize + 7) / 8
-	x := base64.RawURLEncoding.EncodeToString(padLeft(key.X.Bytes(), byteLen))
-	y := base64.RawURLEncoding.EncodeToString(padLeft(key.Y.Bytes(), byteLen))
-	canonical := fmt.Sprintf(`{"crv":"P-256","kty":"EC","x":"%s","y":"%s"}`, x, y)
+	x, y := ecdsaCoordinates(key)
+	xEnc := base64.RawURLEncoding.EncodeToString(x)
+	yEnc := base64.RawURLEncoding.EncodeToString(y)
+	canonical := fmt.Sprintf(`{"crv":"P-256","kty":"EC","x":"%s","y":"%s"}`, xEnc, yEnc)
 	h := sha256.Sum256([]byte(canonical))
 	return base64.RawURLEncoding.EncodeToString(h[:])
-}
-
-// padLeft pads b with leading zeros to length size.
-func padLeft(b []byte, size int) []byte {
-	if len(b) >= size {
-		return b
-	}
-	padded := make([]byte, size)
-	copy(padded[size-len(b):], b)
-	return padded
 }
 
 // marshalJWKS serializes a JWKS to JSON.

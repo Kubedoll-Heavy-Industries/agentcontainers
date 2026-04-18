@@ -53,7 +53,7 @@ ac run --config agentcontainer.json .
 
 ## How It Works
 
-1. `ac run` reads the `secrets` block from `agentcontainer.json`
+1. `agentcontainer run` reads the `secrets` block from `agentcontainer.json`
 2. The Secrets Manager authenticates to Infisical using Machine Identity credentials stored on the host
 3. Universal Auth exchanges client ID + secret for a short-lived access token
 4. Secrets are fetched from the Infisical API for the specified project/environment/path

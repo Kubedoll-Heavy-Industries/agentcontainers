@@ -33,7 +33,7 @@ No bug bounty program at this time (pre-alpha).
 
 **In scope:**
 
-- `ac` CLI and Rust enforcer sidecar (`enforcer/`)
+- `agentcontainer` CLI and Rust enforcer sidecar (`enforcer/`)
 - `agentcontainer.json` schema and policy engine
 - Approval broker and capability matching logic
 - OCI provenance and attestation pipeline
@@ -53,7 +53,7 @@ No bug bounty program at this time (pre-alpha).
 
 ```
 Host OS (trusted)
-└── ac runtime + enforcer sidecar (Trusted Computing Base)
+└── agentcontainer runtime + enforcer sidecar (Trusted Computing Base)
     └── Agent container (UNTRUSTED — treat as adversarial)
         └── Agent process, MCP servers, skills
 ```
@@ -65,12 +65,12 @@ The agent running inside the container is **untrusted by design**. The enforcer 
 | Threat | Mechanism |
 |--------|-----------|
 | Agent executing unapproved binaries | Approval broker + eBPF enforcer (deny-by-default) |
-| Argument injection / subshell escapes | Six-layer defense: AST parse → seccomp → eBPF → AppArmor → Falco |
-| File access outside declared paths | Read-only root FS, explicit bind mounts, Landlock (M3+) |
+| Argument injection / subshell escapes | Approval broker blocks known interpreter escape patterns (`-c`, `-e` flags) |
+| File access outside declared paths | Read-only root FS, explicit bind mounts |
 | Network exfiltration to undeclared hosts | cgroup-scoped BPF connect4/sendmsg4/sendmsg6 hooks |
 | Credential theft | Secrets injected via tmpfs at `/run/secrets`; never in env vars |
-| Supply chain attacks on tools/skills | OCI-packaged, Sigstore-signed, SBOM-attested, digest-pinned |
-| Capability escalation without approval | Human-in-the-loop approval with capability diff before any change |
+| Supply chain attacks on tools/skills | OCI-packaged, Sigstore-signed, digest-pinned |
+| Capability escalation without approval | Human-in-the-loop approval gating |
 
 ### What Is Out of Scope for M0–M3 (Known Limitations)
 
@@ -78,9 +78,9 @@ These are architectural limitations, not bugs. We document them so defenders can
 
 - **Timing covert channels** — a compromised agent can encode data in timing patterns of allowed syscalls. Mitigation requires hardware-level isolation (M3+ microVMs).
 - **DNS exfiltration when DNS is allowed** — if DNS egress is permitted, an agent can exfiltrate data by encoding it in DNS query hostnames. Mitigate by running a filtering resolver or disabling DNS in high-sensitivity environments.
-- **Child process execution tracing** — binaries like `npm test` may spawn child processes that inherit the approved capability set. The enforcer tracks the cgroup but does not intercept interpreter-spawned children at the AST level for all runtimes. See PRD-005 for the roadmap.
+- **Child process execution tracing** — binaries like `npm test` may spawn child processes that inherit the approved capability set. The enforcer tracks the cgroup but does not intercept interpreter-spawned children for all runtimes.
 - **WASM tool sandboxing** — WASM component tools run inside the enforcer process. A memory-safety bug in the Wasm runtime could affect the enforcer itself. WASM execution is sandboxed but not isolated to a separate process.
-- **Kernel-level seccomp USER_NOTIF** — synchronous kernel-level syscall interception requires Linux 5.0+; some environments (container-in-container, older kernels) fall back to gRPC-only enforcement.
+- **No seccomp or AppArmor integration** — enforcement relies on the eBPF cgroup hooks and approval broker. seccomp USER_NOTIF and AppArmor/SELinux profile generation are not yet implemented.
 
 ## Known Limitations
 
@@ -107,22 +107,20 @@ The container boundary is the primary isolation mechanism for these cases. The L
 
 ### No reproducible builds
 
-Binary verification currently requires trusting the GitHub Actions build infrastructure. The released `ac` binaries are not reproducibly buildable from source in a way that allows independent hash verification. SLSA Level 3 provenance is generated (see release workflow), but reproducible builds are a separate follow-up.
+Binary verification currently requires trusting the GitHub Actions build infrastructure. The released `agentcontainer` binaries are not reproducibly buildable from source in a way that allows independent hash verification. SLSA Level 3 provenance is generated (see release workflow), but reproducible builds are a separate follow-up.
 
 ## Security Architecture Summary
 
-Full threat model: [SPEC.md §2](./SPEC.md)
-Six-layer shell enforcement: [PRD-005](./prd/PRD-005-shell-enforcement.md)
+Full security model: see [§Security Model](#security-model) above
 
-**Defense layers (independent failure domains):**
+**Implemented defense layers:**
 
 | Layer | Mechanism | What it blocks |
 |-------|-----------|----------------|
-| L1 | Userspace AST parser in approval broker | Subshell escapes, arg injection, pipe chains |
+| L1 | Approval broker (interpreter flag blocking) | Known escape patterns (`-c`, `-e` flags on interpreters) |
 | L2 | gRPC enforcer — structured capability matching | Binary allowlist, subcommand allowlist |
-| L3 | seccomp USER_NOTIF (Linux 5.0+) | Any exec outside declared set |
-| L4 | eBPF cgroup hooks (connect4/sendmsg4/sendmsg6) | Network access to undeclared hosts |
-| L5 | AppArmor/SELinux profiles | Environment injection, file access |
-| L6 | Falco runtime detection | Post-exploitation anomalies (detect + alert) |
+| L3 | eBPF cgroup hooks (connect4/sendmsg4/sendmsg6) | Network access to undeclared hosts |
+| L4 | LSM file_open hook (credential gating) | Unauthorized access to secret files |
+| L5 | Container isolation (read-only rootfs, namespaces) | File system and process isolation |
 
-A bypass requires defeating all active layers simultaneously.
+**Not yet implemented:** seccomp profile generation from declared capabilities, `memfd_create` hook (fileless execution), reverse shell detection (`dup2`/`dup3`), `security_capable` hook (privilege escalation detection). These are planned for future milestones.

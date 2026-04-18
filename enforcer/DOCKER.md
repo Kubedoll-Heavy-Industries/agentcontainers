@@ -109,8 +109,8 @@ docker build --build-arg GRPC_HEALTH_PROBE_VERSION=v0.4.35 -t agentcontainer-enf
 
 ## Security Notes
 
-1. The container runs as non-root user `enforcer` (UID 65532)
-2. Elevated capabilities are required for BPF operations
+1. The container runs as root — BPF map creation and program loading are root-only kernel operations; the security boundary is container isolation, not UID
+2. Elevated capabilities (CAP_BPF, CAP_SYS_ADMIN, CAP_NET_ADMIN) are required for BPF operations
 3. The container needs access to host PID namespace and cgroups
 4. For production: restrict network exposure (bind to 127.0.0.1 on host)
 5. For production: use read-only filesystem (`--read-only`) and tmpfs mounts

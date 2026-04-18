@@ -90,7 +90,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 
 ## How It Works
 
-1. `ac run` starts the built-in OIDC issuer (HTTP server on localhost)
+1. `agentcontainer run` starts the built-in OIDC issuer (HTTP server on localhost)
 2. The issuer serves `/.well-known/openid-configuration` and `/jwks` endpoints
 3. For each OIDC secret, the Secrets Manager:
    - Mints a JWT signed with an ephemeral key (claims include `aud`, `sub`, `iss`)
