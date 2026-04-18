@@ -1,20 +1,20 @@
-# ac-enforcer sidecar deployment manifest.
+# agentcontainer-enforcer sidecar deployment manifest.
 #
 # Usage:
 #   docker compose up -d                          # Start enforcer only
 #   docker compose --profile example up -d        # Start enforcer + example agent
 #   docker compose down                           # Stop all services
 #
-# The ac-enforcer provides BPF-based security enforcement for agent containers
+# The agentcontainer-enforcer provides BPF-based security enforcement for agent containers
 # via a gRPC API on port 50051 and a Unix domain socket.
 
 services:
-  ac-enforcer:
+  agentcontainer-enforcer:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ac-enforcer:latest
-    container_name: ac-enforcer
+    image: agentcontainer-enforcer:latest
+    container_name: agentcontainer-enforcer
     restart: unless-stopped
 
     cap_add:
@@ -34,9 +34,9 @@ services:
       # BPF filesystem for pinning BPF maps and programs.
       - /sys/fs/bpf:/sys/fs/bpf
       # Shared socket directory for Unix domain socket communication.
-      - ac-enforcer-socket:/run/ac-enforcer
+      - agentcontainer-enforcer-socket:/run/agentcontainer-enforcer
       # Enforcer configuration (read-only).
-      - ac-enforcer-config:/etc/ac-enforcer:ro
+      - agentcontainer-enforcer-config:/etc/agentcontainer-enforcer:ro
 
     environment:
       RUST_LOG: info
@@ -45,7 +45,7 @@ services:
       - "--listen"
       - "0.0.0.0:50051"
       - "--socket"
-      - "/run/ac-enforcer/ac-enforcer.sock"
+      - "/run/agentcontainer-enforcer/agentcontainer-enforcer.sock"
 
     networks:
       - ac-enforcement
@@ -64,7 +64,7 @@ services:
         max-file: "3"
 
     labels:
-      org.opencontainers.image.title: "ac-enforcer"
+      org.opencontainers.image.title: "agentcontainer-enforcer"
       org.opencontainers.image.description: "BPF enforcement sidecar for agentcontainers"
       org.opencontainers.image.source: "https://github.com/Kubedoll-Heavy-Industries/agentcontainers"
       org.opencontainers.image.vendor: "Kubedoll Heavy Industries"
@@ -76,17 +76,17 @@ services:
       - example
 
     depends_on:
-      ac-enforcer:
+      agentcontainer-enforcer:
         condition: service_healthy
 
     environment:
-      AC_ENFORCER_ADDR: "ac-enforcer:50051"
+      AC_ENFORCER_ADDR: "agentcontainer-enforcer:50051"
 
     volumes:
       # Workspace mount — override WORKSPACE_DIR to bind your project.
       - ${WORKSPACE_DIR:-.}:/workspace
       # Shared socket directory for Unix domain socket fallback.
-      - ac-enforcer-socket:/run/ac-enforcer:ro
+      - agentcontainer-enforcer-socket:/run/agentcontainer-enforcer:ro
 
     working_dir: /workspace
 
@@ -98,9 +98,9 @@ services:
     tty: true
 
 volumes:
-  ac-enforcer-socket:
+  agentcontainer-enforcer-socket:
     driver: local
-  ac-enforcer-config:
+  agentcontainer-enforcer-config:
     driver: local
 
 networks:

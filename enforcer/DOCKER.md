@@ -1,4 +1,4 @@
-# Building and Running ac-enforcer Container
+# Building and Running agentcontainer-enforcer Container
 
 ## Build
 
@@ -6,18 +6,18 @@ Build the multi-stage Docker image:
 
 ```bash
 cd enforcer
-docker build -t ac-enforcer:latest .
+docker build -t agentcontainer-enforcer:latest .
 ```
 
 For a specific platform (e.g., Linux amd64):
 
 ```bash
-docker buildx build --platform linux/amd64 -t ac-enforcer:latest .
+docker buildx build --platform linux/amd64 -t agentcontainer-enforcer:latest .
 ```
 
 ## Run
 
-The ac-enforcer requires elevated capabilities to load BPF programs and attach to cgroups:
+The agentcontainer-enforcer requires elevated capabilities to load BPF programs and attach to cgroups:
 
 ```bash
 docker run \
@@ -29,7 +29,7 @@ docker run \
   -v /sys/fs/bpf:/sys/fs/bpf \
   -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
   -p 127.0.0.1:50051:50051 \
-  ac-enforcer:latest \
+  agentcontainer-enforcer:latest \
   --listen 0.0.0.0:50051
 ```
 
@@ -54,11 +54,11 @@ See the example in `Dockerfile` header or use this snippet:
 
 ```yaml
 services:
-  ac-enforcer:
+  agentcontainer-enforcer:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ac-enforcer:latest
+    image: agentcontainer-enforcer:latest
     cap_add:
       - BPF
       - NET_ADMIN
@@ -78,7 +78,7 @@ services:
 
 ## Configuration
 
-The ac-enforcer accepts the following flags:
+The agentcontainer-enforcer accepts the following flags:
 
 - `--listen <addr>`: gRPC listen address (default: `127.0.0.1:50051`)
 - `--socket <path>`: Unix socket path (optional, in addition to TCP)
@@ -87,7 +87,7 @@ The ac-enforcer accepts the following flags:
 Example with custom config:
 
 ```bash
-docker run ... ac-enforcer:latest \
+docker run ... agentcontainer-enforcer:latest \
   --listen 0.0.0.0:50051 \
   --log-level debug
 ```
@@ -104,7 +104,7 @@ HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
 The health probe version can be overridden at build time:
 
 ```bash
-docker build --build-arg GRPC_HEALTH_PROBE_VERSION=v0.4.35 -t ac-enforcer:latest .
+docker build --build-arg GRPC_HEALTH_PROBE_VERSION=v0.4.35 -t agentcontainer-enforcer:latest .
 ```
 
 ## Security Notes

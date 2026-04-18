@@ -1,23 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
-    "ac-common",
-    "ac-ebpf",
-    "ac-enforcer",
+    "agentcontainer-common",
+    "agentcontainer-ebpf",
+    "agentcontainer-enforcer",
     "xtask",
 ]
-# ac-ebpf targets bpfel-unknown-none (BPF) and cannot be compiled for the host.
-# It is included in `members` so `cargo build --package ac-ebpf` resolves (needed
-# by aya-build in ac-enforcer's build.rs), but excluded from `default-members` so
+# agentcontainer-ebpf targets bpfel-unknown-none (BPF) and cannot be compiled for the host.
+# It is included in `members` so `cargo build --package agentcontainer-ebpf` resolves (needed
+# by aya-build in agentcontainer-enforcer's build.rs), but excluded from `default-members` so
 # `cargo build` / `cargo test` don't attempt to compile it for the host target.
 default-members = [
-    "ac-common",
-    "ac-enforcer",
+    "agentcontainer-common",
+    "agentcontainer-enforcer",
     "xtask",
 ]
 
 [workspace.dependencies]
-ac-common = { path = "ac-common" }
+agentcontainer-common = { path = "agentcontainer-common" }
 tokio = { version = "1", features = ["full"] }
 tonic = { version = "0.14", features = ["tls-ring"] }
 rcgen = "0.13"

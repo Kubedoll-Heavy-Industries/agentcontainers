@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 
 const ROOT = join(import.meta.dirname, "..", "..");
 const AC_BIN = join(ROOT, "tmp", "ac");
-const ENFORCER_IMAGE = process.env.AC_ENFORCER_IMAGE ?? "ac-enforcer:test";
+const ENFORCER_IMAGE = process.env.AC_ENFORCER_IMAGE ?? "agentcontainer-enforcer:test";
 
 /** PUT a KV v2 secret into OpenBao/Vault via the HTTP API. */
 async function putSecret(
@@ -75,7 +75,7 @@ describe("secrets: vault provider with OpenBao + enforcer", () => {
     } catch {
       throw new Error(
         `Enforcer image ${ENFORCER_IMAGE} not found. Build it first:\n` +
-        `  docker build -t ac-enforcer:test ./enforcer`,
+        `  docker build -t agentcontainer-enforcer:test ./enforcer`,
       );
     }
 

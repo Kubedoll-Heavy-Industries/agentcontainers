@@ -1,10 +1,10 @@
 # Example docker-compose sidecar usage:
 # services:
-#   ac-enforcer:
+#   agentcontainer-enforcer:
 #     build:
 #       context: ./enforcer
 #       dockerfile: Dockerfile
-#     image: ac-enforcer:latest
+#     image: agentcontainer-enforcer:latest
 #     cap_add:
 #       - BPF
 #       - NET_ADMIN
@@ -80,7 +80,7 @@ RUN ARCH=$(uname -m) && \
 RUN cargo install --locked cargo-zigbuild
 
 # Install nightly toolchain with rust-src (required by aya-build for BPF compilation).
-# ac-ebpf targets bpfel-unknown-none and uses -Z build-std=core, which needs rust-src.
+# agentcontainer-ebpf targets bpfel-unknown-none and uses -Z build-std=core, which needs rust-src.
 RUN rustup toolchain install nightly --component rust-src
 
 # Install bpf-linker (required to link BPF programs for the bpfel-unknown-none target).
@@ -94,34 +94,34 @@ COPY --from=planner /build/recipe.json recipe.json
 RUN RUST_TARGET=$(cat /tmp/rust-target) && \
     rustup target add "$RUST_TARGET" && \
     cargo chef cook --release --target "$RUST_TARGET" \
-      --recipe-path recipe.json -p ac-enforcer 2>&1 \
+      --recipe-path recipe.json -p agentcontainer-enforcer 2>&1 \
     || echo "cargo-chef cook failed (expected for cross targets without system linker); continuing"
 
-# Copy the entire workspace (includes ac-common, ac-enforcer, ac-ebpf, xtask)
+# Copy the entire workspace (includes agentcontainer-common, agentcontainer-enforcer, agentcontainer-ebpf, xtask)
 COPY . .
 
-# Cross-compile the ac-enforcer binary in release mode.
+# Cross-compile the agentcontainer-enforcer binary in release mode.
 # cargo-zigbuild uses Zig as the C linker — compiles natively on the host CPU.
 # build.rs runs on the host and invokes aya-build for BPF programs (arch-independent).
 # rustup target add is repeated here to ensure the target is present even if the
 # chef cook layer above was cached from a build with a different target.
 RUN RUST_TARGET=$(cat /tmp/rust-target) && \
     rustup target add "$RUST_TARGET" && \
-    cargo zigbuild --release --target "$RUST_TARGET" -p ac-enforcer
+    cargo zigbuild --release --target "$RUST_TARGET" -p agentcontainer-enforcer
 
-# Verify and copy artifacts to /build/output/ (not /build/ac-enforcer which
-# collides with the ac-enforcer/ source directory from COPY . .).
+# Verify and copy artifacts to /build/output/ (not /build/agentcontainer-enforcer which
+# collides with the agentcontainer-enforcer/ source directory from COPY . .).
 RUN mkdir -p /build/output && \
     RUST_TARGET=$(cat /tmp/rust-target) && \
-    test -f "/build/target/${RUST_TARGET}/release/ac-enforcer" && \
-    cp "/build/target/${RUST_TARGET}/release/ac-enforcer" /build/output/ac-enforcer
+    test -f "/build/target/${RUST_TARGET}/release/agentcontainer-enforcer" && \
+    cp "/build/target/${RUST_TARGET}/release/agentcontainer-enforcer" /build/output/agentcontainer-enforcer
 
 # Copy BPF ELF from aya-build output to a well-known location.
-# aya-build places it in OUT_DIR (target/<triple>/release/build/ac-enforcer-*/out/).
+# aya-build places it in OUT_DIR (target/<triple>/release/build/agentcontainer-enforcer-*/out/).
 # BPF bytecode is architecture-independent (bpfel VM).
-RUN find /build/target -name 'ac-ebpf-progs' -path '*/out/*' \
-    | head -1 | xargs -I{} cp {} /build/output/ac-ebpf-progs.elf \
-    && test -f /build/output/ac-ebpf-progs.elf
+RUN find /build/target -name 'agentcontainer-ebpf-progs' -path '*/out/*' \
+    | head -1 | xargs -I{} cp {} /build/output/agentcontainer-ebpf-progs.elf \
+    && test -f /build/output/agentcontainer-ebpf-progs.elf
 
 # ========================================================================
 # Health Probe Stage: Download grpc_health_probe for the target platform
@@ -157,20 +157,20 @@ RUN apt-get update && apt-get install -y \
 COPY --from=healthprobe /bin/grpc_health_probe /bin/grpc_health_probe
 
 # Copy the compiled binary from builder stage
-COPY --from=builder /build/output/ac-enforcer /usr/local/bin/ac-enforcer
+COPY --from=builder /build/output/agentcontainer-enforcer /usr/local/bin/agentcontainer-enforcer
 
 # Copy the BPF ELF to the well-known path the binary searches at runtime
-COPY --from=builder /build/output/ac-ebpf-progs.elf /usr/lib/ac-enforcer/ac-ebpf-progs
+COPY --from=builder /build/output/agentcontainer-ebpf-progs.elf /usr/lib/agentcontainer-enforcer/agentcontainer-ebpf-progs
 
 # Make binaries executable
-RUN chmod 755 /usr/local/bin/ac-enforcer \
-    && chmod 644 /usr/lib/ac-enforcer/ac-ebpf-progs
+RUN chmod 755 /usr/local/bin/agentcontainer-enforcer \
+    && chmod 644 /usr/lib/agentcontainer-enforcer/agentcontainer-ebpf-progs
 
 # Expose gRPC port
 EXPOSE 50051
 
 # OCI labels
-LABEL org.opencontainers.image.title="ac-enforcer"
+LABEL org.opencontainers.image.title="agentcontainer-enforcer"
 LABEL org.opencontainers.image.description="BPF enforcement daemon for agentcontainers"
 LABEL org.opencontainers.image.source="https://github.com/Kubedoll-Heavy-Industries/agentcontainers"
 
@@ -178,8 +178,8 @@ LABEL org.opencontainers.image.source="https://github.com/Kubedoll-Heavy-Industr
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
     CMD ["/bin/grpc_health_probe", "-addr=localhost:50051", "-service=agentcontainers.enforcer.v1.Enforcer"]
 
-# Entrypoint: the ac-enforcer binary
-ENTRYPOINT ["/usr/local/bin/ac-enforcer"]
+# Entrypoint: the agentcontainer-enforcer binary
+ENTRYPOINT ["/usr/local/bin/agentcontainer-enforcer"]
 
 # Default arguments: bind to all interfaces on port 50051
 # Override with docker run args if needed (e.g., --listen 127.0.0.1:50051)

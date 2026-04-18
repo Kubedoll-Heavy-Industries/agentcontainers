@@ -121,7 +121,7 @@ This is the human-in-the-loop layer for runtime escalation.
 The enforcer uses a **gRPC sidecar** architecture:
 
 ```
-agentcontainer runtime ──gRPC──► ac-enforcer sidecar ──BPF──► kernel
+agentcontainer runtime ──gRPC──► agentcontainer-enforcer sidecar ──BPF──► kernel
 ```
 
 - The Go runtime sends policy via gRPC to the Rust enforcer sidecar

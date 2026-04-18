@@ -175,7 +175,7 @@ Configure the BPF enforcer sidecar:
 {
   "agent": {
     "enforcer": {
-      "image": "ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest",
+      "image": "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest",
       "required": true
     }
   }
@@ -184,7 +184,7 @@ Configure the BPF enforcer sidecar:
 
 | Field | Description |
 |---|---|
-| `image` | OCI reference for the ac-enforcer container |
+| `image` | OCI reference for the agentcontainer-enforcer container |
 | `required` | If `true` (default), `agentcontainer run` fails if the sidecar cannot start. Set to `false` only for local development. |
 | `addr` | gRPC address of a pre-existing sidecar (skip auto-start) |
 

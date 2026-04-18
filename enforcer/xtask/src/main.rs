@@ -1,9 +1,9 @@
-//! Build tooling for ac-enforcer.
+//! Build tooling for agentcontainer-enforcer.
 //!
 //! Usage:
 //!   cargo xtask build-ebpf [--release]
 //!
-//! Compiles the ac-ebpf crate for the BPF target (bpfel-unknown-none).
+//! Compiles the agentcontainer-ebpf crate for the BPF target (bpfel-unknown-none).
 
 use std::process::Command;
 
@@ -30,7 +30,7 @@ fn main() -> anyhow::Result<()> {
 
 fn build_ebpf(release: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    cmd.current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../ac-ebpf"));
+    cmd.current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../agentcontainer-ebpf"));
 
     cmd.args([
         "+nightly",

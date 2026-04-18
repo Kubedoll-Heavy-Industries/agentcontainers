@@ -79,7 +79,7 @@ jobs:
       - uses: docker/metadata-action@v6
         id: meta
         with:
-          images: ghcr.io/kubedoll-heavy-industries/ac-enforcer
+          images: ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer
           tags: |
             type=semver,pattern={{version}},value=${{ needs.release-please.outputs['enforcer--tag_name'] }}
             type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs['enforcer--tag_name'] }}

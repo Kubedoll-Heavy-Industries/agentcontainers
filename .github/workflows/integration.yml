@@ -72,11 +72,11 @@ jobs:
 
       - name: Pull pre-built enforcer image
         if: steps.changes.outputs.enforcer != 'true'
-        run: docker pull ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest
+        run: docker pull ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest
 
       - name: Build enforcer image (enforcer changed)
         if: steps.changes.outputs.enforcer == 'true'
-        run: docker build -t ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest enforcer/
+        run: docker build -t ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest enforcer/
 
       - name: Run integration tests
         run: go test -race -tags=integration ./internal/integration/...

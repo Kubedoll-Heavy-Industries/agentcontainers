@@ -47,7 +47,7 @@ All three must pass with no errors or warnings.
 | `internal/orgpolicy/` | Org policy extraction, merge, comparison. |
 | `internal/secrets/` | Secret URI parsing and provider implementations (Vault, 1Password, Infisical, OIDC, env). |
 | `internal/approval/` | Human-in-the-loop capability approval broker. |
-| `enforcer/` | Rust workspace: `ac-ebpf` (Aya BPF programs), `ac-enforcer` (Tokio gRPC server), `ac-common`. |
+| `enforcer/` | Rust workspace: `agentcontainer-ebpf` (Aya BPF programs), `agentcontainer-enforcer` (Tokio gRPC server), `agentcontainer-common`. |
 | `SPEC.md` | Full specification (~1600 lines). The authoritative source of truth. |
 | `ROADMAP.md` | Milestone plan with status. |
 | `prd/` | Per-feature PRDs with detailed design. |
@@ -112,9 +112,9 @@ Coordinate with maintainers before modifying these.
 If you are changing the Rust enforcer (`enforcer/`):
 
 - Install the Rust toolchain via `rustup` — the toolchain version is pinned in `enforcer/rust-toolchain.toml`.
-- BPF programs in `enforcer/ac-ebpf/` are compiled with `cargo xtask build-ebpf` and embedded into the enforcer binary at compile time.
+- BPF programs in `enforcer/agentcontainer-ebpf/` are compiled with `cargo xtask build-ebpf` and embedded into the enforcer binary at compile time.
 - Run `cargo test` in the `enforcer/` directory before submitting.
-- The enforcer communicates with the Go CLI via gRPC. Proto definitions are in `enforcer/ac-enforcer/proto/`. Regenerate Go bindings with `make proto` if you change the proto files.
+- The enforcer communicates with the Go CLI via gRPC. Proto definitions are in `enforcer/agentcontainer-enforcer/proto/`. Regenerate Go bindings with `make proto` if you change the proto files.
 
 ## Dependency Management
 

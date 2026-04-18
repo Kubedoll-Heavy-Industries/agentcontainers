@@ -1,0 +1,18 @@
+[package]
+name = "agentcontainer-ebpf"
+version = "0.1.0"
+edition = "2021"
+description = "BPF programs for agentcontainers enforcement"
+
+# This crate is compiled for the BPF target (bpfel-unknown-none).
+# It is NOT a workspace member — it's built via xtask or agentcontainer-enforcer's build.rs.
+
+[dependencies]
+agentcontainer-common = { path = "../agentcontainer-common", default-features = false }
+aya-ebpf = "0.1"
+aya-log-ebpf = "0.1"
+siphasher = { version = "1", default-features = false }
+
+[[bin]]
+name = "agentcontainer-ebpf-progs"
+path = "src/lib.rs"

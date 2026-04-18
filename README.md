@@ -152,7 +152,7 @@ Full schema reference: [SPEC.md](./SPEC.md)
 │  └──────────────────────────────────────────────┘  │
 │     │                                               │
 │     ▼           gRPC                                │
-│  ac-enforcer sidecar (Rust + Aya eBPF)             │
+│  agentcontainer-enforcer sidecar (Rust + Aya eBPF)             │
 │     ├── cgroup/connect4/sendmsg BPF hooks           │
 │     ├── LSM file_open hook (credential gating)      │
 │     └── WASM Component tool host                   │
@@ -191,7 +191,7 @@ Repository layout:
 | `internal/oci/` | OCI Distribution Spec client, push/pull |
 | `internal/orgpolicy/` | Org policy extraction, merge, comparison |
 | `internal/secrets/` | Secret provider implementations |
-| `enforcer/` | Rust: ac-ebpf (Aya BPF), ac-enforcer (Tokio gRPC) |
+| `enforcer/` | Rust: agentcontainer-ebpf (Aya BPF), agentcontainer-enforcer (Tokio gRPC) |
 | `SPEC.md` | Full specification (~1600 lines) |
 | `ROADMAP.md` | Milestone plan with status |
 | `prd/` | Per-feature PRDs |

@@ -100,7 +100,7 @@ Runtime auto-detection: `--runtime auto` probes for Sandbox availability, falls 
 
 ## The enforcer sidecar
 
-The enforcer is a Rust binary (`ac-enforcer`) that runs as a sidecar container. It attaches Aya BPF programs to the agent container's cgroup and enforces policy at the kernel level:
+The enforcer is a Rust binary (`agentcontainer-enforcer`) that runs as a sidecar container. It attaches Aya BPF programs to the agent container's cgroup and enforces policy at the kernel level:
 
 - **Network**: `connect4`, `connect6`, `sendmsg4`, `sendmsg6` hooks gate all TCP and UDP egress
 - **Filesystem**: LSM `file_open` hook with inode-level allow/deny lists

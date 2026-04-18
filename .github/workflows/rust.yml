@@ -42,12 +42,12 @@ jobs:
 
       - name: Unit tests
         run: |
-          cargo test --manifest-path enforcer/Cargo.toml -p ac-common
-          cargo test --manifest-path enforcer/Cargo.toml -p ac-enforcer --lib
+          cargo test --manifest-path enforcer/Cargo.toml -p agentcontainer-common
+          cargo test --manifest-path enforcer/Cargo.toml -p agentcontainer-enforcer --lib
 
       # BPF integration tests require CONFIG_BPF_LSM=y which GHA runners
       # don't have. Run these on self-hosted runners or locally with:
-      #   sudo cargo test -p ac-enforcer --test bpf_integration
+      #   sudo cargo test -p agentcontainer-enforcer --test bpf_integration
       #
       # gRPC integration tests require Docker for testcontainers.
-      # Run locally with: cargo test -p ac-enforcer --test grpc_integration
+      # Run locally with: cargo test -p agentcontainer-enforcer --test grpc_integration

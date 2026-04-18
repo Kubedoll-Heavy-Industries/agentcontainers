@@ -2,7 +2,7 @@
 name = "xtask"
 version = "0.1.0"
 edition = "2021"
-description = "Build tooling for ac-enforcer — compiles BPF programs, generates bindings"
+description = "Build tooling for agentcontainer-enforcer — compiles BPF programs, generates bindings"
 
 [dependencies]
 clap = { workspace = true }
