@@ -15,8 +15,8 @@ import (
 func newEnforcerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enforcer",
-		Short: "Manage the ac-enforcer BPF enforcement sidecar",
-		Long: `Manage the ac-enforcer container that provides BPF-based enforcement
+		Short: "Manage the agentcontainer-enforcer BPF enforcement sidecar",
+		Long: `Manage the agentcontainer-enforcer container that provides BPF-based enforcement
 via a gRPC sidecar. The enforcer runs as a privileged container with
 access to cgroups and BPF filesystems, providing network, filesystem,
 and process enforcement for agent containers.`,
@@ -40,8 +40,8 @@ func newEnforcerStartCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the ac-enforcer sidecar container",
-		Long: `Pull and start the ac-enforcer container with the required capabilities
+		Short: "Start the agentcontainer-enforcer sidecar container",
+		Long: `Pull and start the agentcontainer-enforcer container with the required capabilities
 and mounts for BPF enforcement. After starting, the command probes the
 gRPC health endpoint to verify the enforcer is ready.`,
 		Args: cobra.NoArgs,
@@ -50,7 +50,7 @@ gRPC health endpoint to verify the enforcer is ready.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&image, "image", sidecar.DefaultEnforcerImage, "ac-enforcer OCI image reference")
+	cmd.Flags().StringVar(&image, "image", sidecar.DefaultEnforcerImage, "agentcontainer-enforcer OCI image reference")
 	cmd.Flags().IntVar(&port, "port", sidecar.DefaultPort, "gRPC listen port")
 
 	return cmd
@@ -61,8 +61,8 @@ func newEnforcerStopCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the ac-enforcer sidecar container",
-		Long:  `Stop and remove the ac-enforcer container.`,
+		Short: "Stop the agentcontainer-enforcer sidecar container",
+		Long:  `Stop and remove the agentcontainer-enforcer container.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runEnforcerStop(cmd, force)
@@ -77,8 +77,8 @@ func newEnforcerStopCmd() *cobra.Command {
 func newEnforcerStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
-		Short: "Show ac-enforcer sidecar status",
-		Long:  `Check whether the ac-enforcer container is running and probe its gRPC health endpoint.`,
+		Short: "Show agentcontainer-enforcer sidecar status",
+		Long:  `Check whether the agentcontainer-enforcer container is running and probe its gRPC health endpoint.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runEnforcerStatus(cmd)
@@ -103,7 +103,7 @@ func runEnforcerStart(cmd *cobra.Command, image string, port int) error {
 		return fmt.Errorf("enforcer start: creating docker client: %w", err)
 	}
 
-	_, _ = fmt.Fprintln(out, "Starting ac-enforcer sidecar...")
+	_, _ = fmt.Fprintln(out, "Starting agentcontainer-enforcer sidecar...")
 
 	handle, err := sidecar.StartSidecar(ctx, cli, sidecar.StartOptions{
 		Image:    image,
@@ -158,7 +158,7 @@ func runEnforcerStop(cmd *cobra.Command, force bool) error {
 		}
 	}
 
-	_, _ = fmt.Fprintln(out, "ac-enforcer stopped")
+	_, _ = fmt.Fprintln(out, "agentcontainer-enforcer stopped")
 	return nil
 }
 
@@ -173,7 +173,7 @@ func runEnforcerStatus(cmd *cobra.Command) error {
 
 	result, err := cli.ContainerInspect(ctx, sidecar.ContainerName, client.ContainerInspectOptions{})
 	if err != nil {
-		_, _ = fmt.Fprintln(out, "ac-enforcer is not running")
+		_, _ = fmt.Fprintln(out, "agentcontainer-enforcer is not running")
 		return nil
 	}
 

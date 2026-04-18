@@ -450,7 +450,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 		dockerCli, cliErr := client.New(client.FromEnv)
 		if cliErr == nil {
 			if stopErr := sidecar.StopSidecar(context.Background(), dockerCli, sidecarHandle); stopErr != nil {
-				logger.Warn("failed to stop ac-enforcer sidecar", zap.Error(stopErr))
+				logger.Warn("failed to stop agentcontainer-enforcer sidecar", zap.Error(stopErr))
 			} else {
 				_, _ = fmt.Fprintf(out, "Enforcer stopped\n")
 			}
@@ -532,7 +532,7 @@ func resolveSidecar(cmd *cobra.Command, cfg *config.AgentContainer) (*sidecar.Si
 		ConfigAddr: configAddr,
 	})
 	if result.Addr != "" {
-		logger.Info("using pre-existing ac-enforcer",
+		logger.Info("using pre-existing agentcontainer-enforcer",
 			zap.String("addr", result.Addr),
 			zap.String("source", result.Source),
 		)
@@ -566,7 +566,7 @@ func resolveSidecar(cmd *cobra.Command, cfg *config.AgentContainer) (*sidecar.Si
 		return nil, "", nil
 	}
 
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Starting ac-enforcer sidecar...")
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Starting agentcontainer-enforcer sidecar...")
 	handle, err := sidecar.StartSidecar(cmd.Context(), dockerCli, sidecar.StartOptions{
 		Image:    image,
 		Required: required,

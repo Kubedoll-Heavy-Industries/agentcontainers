@@ -16,7 +16,7 @@ import (
 // Only oci.ErrNoPolicyLayer (no policy layer in the manifest) returns a nil
 // error with DefaultPolicy(). All other fetch errors — network failures, auth
 // failures, digest mismatches, malformed manifests — are propagated as hard
-// failures so that ac run exits rather than proceeding permissively.
+// failures so that agentcontainer run exits rather than proceeding permissively.
 func ExtractPolicy(ctx context.Context, imageRef string, opts ...oci.ResolverOption) (*OrgPolicy, error) {
 	if imageRef == "" {
 		return DefaultPolicy(), nil

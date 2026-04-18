@@ -738,7 +738,7 @@ func TestValidate(t *testing.T) {
 				Image: "alpine:3",
 				Agent: &AgentConfig{
 					Enforcer: &EnforcerConfig{
-						Image: "ghcr.io/kubedoll-heavy-industries/ac-enforcer:v0.3.0",
+						Image: "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:v0.3.0",
 					},
 				},
 			},
@@ -1252,7 +1252,7 @@ func TestRoundTrip_EnforcerConfig(t *testing.T) {
 		"image": "alpine:3",
 		"agent": {
 			"enforcer": {
-				"image": "ghcr.io/kubedoll-heavy-industries/ac-enforcer:v0.3.0",
+				"image": "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:v0.3.0",
 				"required": false,
 				"addr": "127.0.0.1:50051"
 			}
@@ -1269,8 +1269,8 @@ func TestRoundTrip_EnforcerConfig(t *testing.T) {
 	}
 
 	e := cfg.Agent.Enforcer
-	if e.Image != "ghcr.io/kubedoll-heavy-industries/ac-enforcer:v0.3.0" {
-		t.Errorf("Image = %q, want %q", e.Image, "ghcr.io/kubedoll-heavy-industries/ac-enforcer:v0.3.0")
+	if e.Image != "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:v0.3.0" {
+		t.Errorf("Image = %q, want %q", e.Image, "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:v0.3.0")
 	}
 	if e.Required == nil || *e.Required != false {
 		t.Errorf("Required = %v, want false", e.Required)

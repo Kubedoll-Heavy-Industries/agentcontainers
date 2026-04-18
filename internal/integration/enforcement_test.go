@@ -20,7 +20,7 @@ func TestEnforcement_EgressBlocksExternal(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	// Start the ac-enforcer sidecar. It needs BPF capabilities to enforce
+	// Start the agentcontainer-enforcer sidecar. It needs BPF capabilities to enforce
 	// network egress policy via cgroup/connect4 programs.
 	dockerCli, err := client.New(client.FromEnv)
 	if err != nil {

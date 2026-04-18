@@ -1,4 +1,4 @@
-// Package sidecar provides lifecycle management for the ac-enforcer sidecar
+// Package sidecar provides lifecycle management for the agentcontainer-enforcer sidecar
 // container. It handles pulling, starting, health-checking, discovering, and
 // stopping the enforcer container that provides BPF-based enforcement via gRPC.
 package sidecar
@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	// DefaultEnforcerImage is the default OCI image for the ac-enforcer sidecar.
-	DefaultEnforcerImage = "ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest"
+	// DefaultEnforcerImage is the default OCI image for the agentcontainer-enforcer sidecar.
+	DefaultEnforcerImage = "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest"
 
-	// DefaultPort is the default gRPC port for the ac-enforcer sidecar.
+	// DefaultPort is the default gRPC port for the agentcontainer-enforcer sidecar.
 	DefaultPort = 50051
 
 	// DefaultHealthTimeout is how long to wait for the enforcer to become healthy.
@@ -32,8 +32,8 @@ const (
 	// DefaultHealthInterval is how often to poll health during startup.
 	DefaultHealthInterval = 500 * time.Millisecond
 
-	// ContainerName is the well-known container name for the ac-enforcer sidecar.
-	ContainerName = "ac-enforcer"
+	// ContainerName is the well-known container name for the agentcontainer-enforcer sidecar.
+	ContainerName = "agentcontainer-enforcer"
 
 	// LabelComponent identifies the container as an enforcer component.
 	LabelComponent = "dev.agentcontainer/component"
@@ -119,7 +119,7 @@ type HealthProber func(target string) bool
 // defaultHealthProber uses the enforcement package's health probe.
 var defaultHealthProber HealthProber = enforcement.ProbeEnforcerHealth
 
-// StartSidecar pulls (if necessary) and starts the ac-enforcer container,
+// StartSidecar pulls (if necessary) and starts the agentcontainer-enforcer container,
 // then polls the gRPC health endpoint until SERVING or timeout.
 // Returns a SidecarHandle with Managed: true.
 //
@@ -173,7 +173,7 @@ func StartSidecar(ctx context.Context, dockerClient client.APIClient, opts Start
 				Target: "/sys/fs/bpf",
 			},
 			// UDS mount deferred to Phase 6 (PRD-015 non-goal).
-			// {Type: mount.TypeBind, Source: "/run/ac-enforcer", Target: "/run/ac-enforcer"},
+			// {Type: mount.TypeBind, Source: "/run/agentcontainer-enforcer", Target: "/run/agentcontainer-enforcer"},
 		},
 		PortBindings: network.PortMap{
 			exposedPort: {
@@ -191,8 +191,8 @@ func StartSidecar(ctx context.Context, dockerClient client.APIClient, opts Start
 		Name:       ContainerName,
 	})
 	if err != nil {
-		// Handle name conflict: a container named "ac-enforcer" already exists
-		// (e.g., from a previous crash or concurrent ac run). Try to adopt it.
+		// Handle name conflict: a container named "agentcontainer-enforcer" already exists
+		// (e.g., from a previous crash or concurrent agentcontainer run). Try to adopt it.
 		if isNameConflict(err) {
 			addr := fmt.Sprintf("127.0.0.1:%d", opts.Port)
 			if defaultHealthProber(addr) {
@@ -296,7 +296,7 @@ func WaitHealthyWithProber(ctx context.Context, target string, timeout, interval
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-deadline:
-			return fmt.Errorf("timed out waiting for ac-enforcer health on %s", target)
+			return fmt.Errorf("timed out waiting for agentcontainer-enforcer health on %s", target)
 		case <-ticker.C:
 			if prober(target) {
 				return nil

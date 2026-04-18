@@ -346,7 +346,7 @@ func TestAttestL3WithSourceAndCommit(t *testing.T) {
 	cmd.SetOut(&outBuf)
 	cmd.SetContext(context.Background())
 
-	err := runAttest(cmd, "ghcr.io/kubedoll-heavy-industries/ac-enforcer@sha256:abc123", attestOptions{
+	err := runAttest(cmd, "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer@sha256:abc123", attestOptions{
 		ExpectedWorkflow:   "slsa-github-generator",
 		ExpectedSourceRepo: "Kubedoll-Heavy-Industries/agentcontainers",
 		MinLevel:           signing.SLSALevel2,

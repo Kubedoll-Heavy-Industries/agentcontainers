@@ -374,7 +374,7 @@ func (s *SandboxRuntime) Start(ctx context.Context, cfg *config.AgentContainer, 
 		}
 	}
 
-	// Start ac-enforcer sidecar inside VM if enforcement is enabled.
+	// Start agentcontainer-enforcer sidecar inside VM if enforcement is enabled.
 	var enforcerAddr string
 	if s.enfLevel == enforcement.LevelGRPC {
 		// Get VM IP for health checking from the host.

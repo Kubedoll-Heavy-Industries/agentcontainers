@@ -30,7 +30,7 @@ var ErrNoPolicyLayer = errors.New("no policy layer found in manifest")
 // preventing type-confusion attacks where a valid sig is reused on a descriptor
 // with the same blob but different media type.
 //
-// Produced at build time via ac build --org-sign-key <keyfile>.
+// Produced at build time via agentcontainer build --org-sign-key <keyfile>.
 // Verified at run time when WithOrgTrustedKeys is configured on the Resolver.
 const AnnotationOrgPolicySigner = "org.agentcontainers.policy.org-signer"
 

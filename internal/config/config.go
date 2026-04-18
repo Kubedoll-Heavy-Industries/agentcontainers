@@ -54,18 +54,18 @@ type AgentConfig struct {
 
 // EnforcerConfig controls sidecar discovery and lifecycle behavior.
 type EnforcerConfig struct {
-	// Image is the OCI reference for the ac-enforcer container.
-	// Default: "ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest"
+	// Image is the OCI reference for the agentcontainer-enforcer container.
+	// Default: "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest"
 	Image string `json:"image,omitempty"`
 
-	// Required causes ac run to fail if the sidecar cannot start or is
+	// Required causes agentcontainer run to fail if the sidecar cannot start or is
 	// unreachable. Default: true (fail-closed). Set to false only for
 	// local development where enforcement is explicitly not needed.
 	Required *bool `json:"required,omitempty"`
 
 	// Addr is the gRPC address of a pre-existing sidecar. When set,
 	// auto-start is skipped entirely. Overridden by AC_ENFORCER_ADDR env var.
-	// Example: "127.0.0.1:50051" or "unix:///run/ac-enforcer.sock"
+	// Example: "127.0.0.1:50051" or "unix:///run/agentcontainer-enforcer.sock"
 	Addr string `json:"addr,omitempty"`
 }
 

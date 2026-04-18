@@ -30,7 +30,7 @@ func newComponentInspectCmd() *cobra.Command {
 it exports. This is a read-only operation — the component is not
 loaded into any running session.
 
-Full WIT introspection requires a running ac-enforcer sidecar with
+Full WIT introspection requires a running agentcontainer-enforcer sidecar with
 Wassette support (Phase B). In Phase A, this command validates the
 OCI reference and reports that introspection is not yet available.`,
 		Args: cobra.ExactArgs(1),
@@ -50,7 +50,7 @@ func runComponentInspect(cmd *cobra.Command, ref string) error {
 	}
 
 	_, _ = fmt.Fprintf(out, "Component:  %s\n", ref)
-	_, _ = fmt.Fprintf(out, "Status:     WIT introspection requires a running ac-enforcer with Wassette support\n")
+	_, _ = fmt.Fprintf(out, "Status:     WIT introspection requires a running agentcontainer-enforcer with Wassette support\n")
 	_, _ = fmt.Fprintf(out, "            Start the enforcer with: agentcontainer enforcer start\n")
 	_, _ = fmt.Fprintf(out, "            Then re-run: agentcontainer component inspect %s\n", ref)
 

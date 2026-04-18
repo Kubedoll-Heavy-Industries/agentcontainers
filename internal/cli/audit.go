@@ -22,8 +22,8 @@ const (
 func newAuditCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "audit",
-		Short: "Display enforcement events from the ac-enforcer sidecar",
-		Long: `Query and stream enforcement audit events from the ac-enforcer
+		Short: "Display enforcement events from the agentcontainer-enforcer sidecar",
+		Long: `Query and stream enforcement audit events from the agentcontainer-enforcer
 gRPC sidecar. Events include network, filesystem, process, and credential
 policy decisions with allow/block verdicts.`,
 	}
@@ -51,8 +51,8 @@ func newAuditEventsCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "events",
-		Short: "Stream enforcement events from the ac-enforcer sidecar",
-		Long: `Stream enforcement events in real time from the ac-enforcer gRPC
+		Short: "Stream enforcement events from the agentcontainer-enforcer sidecar",
+		Long: `Stream enforcement events in real time from the agentcontainer-enforcer gRPC
 sidecar. Events are displayed as they occur, showing policy verdicts
 for network, filesystem, process, and credential operations.
 
@@ -64,7 +64,7 @@ Use --follow (-f) for continuous streaming (like tail -f). Without
 		},
 	}
 
-	cmd.Flags().StringVar(&addr, "addr", defaultEnforcerAddr, "ac-enforcer gRPC address")
+	cmd.Flags().StringVar(&addr, "addr", defaultEnforcerAddr, "agentcontainer-enforcer gRPC address")
 	cmd.Flags().StringVar(&containerID, "container", "", "Filter by container ID")
 	cmd.Flags().StringVar(&eventType, "type", "", "Filter by event type (network|filesystem|process|credential)")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Output events as JSON")
@@ -81,8 +81,8 @@ func newAuditSummaryCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "summary",
-		Short: "Show enforcement event summary from the ac-enforcer sidecar",
-		Long: `Display aggregated enforcement statistics from the ac-enforcer
+		Short: "Show enforcement event summary from the agentcontainer-enforcer sidecar",
+		Long: `Display aggregated enforcement statistics from the agentcontainer-enforcer
 gRPC sidecar. Shows counts of allowed and blocked events grouped by
 enforcement domain (network, filesystem, process).`,
 		Args: cobra.NoArgs,
@@ -91,7 +91,7 @@ enforcement domain (network, filesystem, process).`,
 		},
 	}
 
-	cmd.Flags().StringVar(&addr, "addr", defaultEnforcerAddr, "ac-enforcer gRPC address")
+	cmd.Flags().StringVar(&addr, "addr", defaultEnforcerAddr, "agentcontainer-enforcer gRPC address")
 	cmd.Flags().StringVar(&containerID, "container", "", "Filter by container ID")
 
 	return cmd

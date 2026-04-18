@@ -142,7 +142,7 @@ func TestIsMCPSidecar(t *testing.T) {
 		},
 		{
 			name:  "enforcer sidecar",
-			names: []string{"/ac-enforcer"},
+			names: []string{"/agentcontainer-enforcer"},
 			want:  false,
 		},
 		{

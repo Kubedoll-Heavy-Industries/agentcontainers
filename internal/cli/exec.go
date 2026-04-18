@@ -56,7 +56,7 @@ Environment variables can be injected with -e KEY=VALUE. Secret URI schemes
 }
 
 func runExec(cmd *cobra.Command, containerID string, execCmd []string, runtimeFlag string, configPath string, envVars []string) error {
-	// BPF enforcement is already active on the container's cgroup from ac run.
+	// BPF enforcement is already active on the container's cgroup from agentcontainer run.
 	// The runtime here only needs LevelNone because we are not re-applying
 	// policy — the approval broker provides the Go-side defense-in-depth.
 	rt, err := newRuntime(runtimeFlag, logger, enforcement.LevelNone)

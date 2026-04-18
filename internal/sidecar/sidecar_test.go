@@ -727,13 +727,13 @@ func TestEnsureImage_PullError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConstants(t *testing.T) {
-	if DefaultEnforcerImage != "ghcr.io/kubedoll-heavy-industries/ac-enforcer:latest" {
+	if DefaultEnforcerImage != "ghcr.io/kubedoll-heavy-industries/agentcontainer-enforcer:latest" {
 		t.Errorf("DefaultEnforcerImage = %q, unexpected value", DefaultEnforcerImage)
 	}
 	if DefaultPort != 50051 {
 		t.Errorf("DefaultPort = %d, want 50051", DefaultPort)
 	}
-	if ContainerName != "ac-enforcer" {
-		t.Errorf("ContainerName = %q, want %q", ContainerName, "ac-enforcer")
+	if ContainerName != "agentcontainer-enforcer" {
+		t.Errorf("ContainerName = %q, want %q", ContainerName, "agentcontainer-enforcer")
 	}
 }

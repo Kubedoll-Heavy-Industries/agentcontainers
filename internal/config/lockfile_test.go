@@ -97,7 +97,7 @@ func TestLockfile_Validate(t *testing.T) {
 				GeneratedBy: "ac/0.1.0",
 				Resolved:    ResolvedArtifacts{},
 			},
-			wantErr: "re-run `ac lock`",
+			wantErr: "re-run `agentcontainer lock`",
 		},
 		{
 			name: "wrong version",

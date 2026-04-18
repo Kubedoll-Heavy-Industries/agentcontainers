@@ -126,7 +126,7 @@ func newPolicyTrustCmd() *cobra.Command {
 
 The trust store (~/.agentcontainers/trusted-org-keys.json, or AC_ORG_TRUST_STORE
 env var) holds the Ed25519 public keys that are trusted to sign org policy layers
-baked into container images. At runtime, ac run uses these keys to validate the
+baked into container images. At runtime, agentcontainer run uses these keys to validate the
 policy layer embedded in the container image before applying it.
 
 When the trust store is populated, policy layers not signed by a trusted key are

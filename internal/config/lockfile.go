@@ -97,7 +97,7 @@ func (l *Lockfile) Validate() error {
 
 	if l.Version != 2 {
 		if l.Version == 1 {
-			errs = append(errs, fmt.Errorf("lockfile is version 1; re-run `ac lock` to generate a version 2 lockfile"))
+			errs = append(errs, fmt.Errorf("lockfile is version 1; re-run `agentcontainer lock` to generate a version 2 lockfile"))
 		} else {
 			errs = append(errs, fmt.Errorf("version must be 2, got %d", l.Version))
 		}

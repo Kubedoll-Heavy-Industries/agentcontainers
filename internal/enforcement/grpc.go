@@ -19,7 +19,7 @@ import (
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/secrets"
 )
 
-// GRPCStrategy delegates enforcement to an ac-enforcer gRPC sidecar service.
+// GRPCStrategy delegates enforcement to an agentcontainer-enforcer gRPC sidecar service.
 type GRPCStrategy struct {
 	client   enforcerapi.EnforcerClient
 	conn     *grpc.ClientConn
@@ -150,7 +150,7 @@ func GRPCOptsFromEnv() ([]GRPCOption, error) {
 }
 
 // NewGRPCStrategy creates a gRPC-based enforcement strategy that connects
-// to an ac-enforcer sidecar at the given target address.
+// to an agentcontainer-enforcer sidecar at the given target address.
 func NewGRPCStrategy(target string, opts ...GRPCOption) (*GRPCStrategy, error) {
 	cfg := defaultGRPCConfig()
 	for _, opt := range opts {

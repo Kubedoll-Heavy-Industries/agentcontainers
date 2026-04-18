@@ -15,7 +15,7 @@ import (
 type Level int
 
 const (
-	// LevelGRPC delegates enforcement to an ac-enforcer gRPC sidecar.
+	// LevelGRPC delegates enforcement to an agentcontainer-enforcer gRPC sidecar.
 	LevelGRPC Level = iota
 
 	// LevelNone indicates no enforcement mechanism is available.
@@ -36,7 +36,7 @@ func (l Level) String() string {
 
 // DetectLevel probes the system and returns the best available enforcement level.
 func DetectLevel() Level {
-	// Check for ac-enforcer sidecar via gRPC health check.
+	// Check for agentcontainer-enforcer sidecar via gRPC health check.
 	if target := os.Getenv("AC_ENFORCER_ADDR"); target != "" {
 		if probeEnforcerHealth(target) {
 			return LevelGRPC
@@ -46,13 +46,13 @@ func DetectLevel() Level {
 	return LevelNone
 }
 
-// ProbeEnforcerHealth checks if the ac-enforcer sidecar is reachable via gRPC.
+// ProbeEnforcerHealth checks if the agentcontainer-enforcer sidecar is reachable via gRPC.
 // It returns true if the health check succeeds within a 2-second timeout.
 func ProbeEnforcerHealth(target string) bool {
 	return probeEnforcerHealth(target)
 }
 
-// probeEnforcerHealth checks if the ac-enforcer sidecar is reachable via gRPC.
+// probeEnforcerHealth checks if the agentcontainer-enforcer sidecar is reachable via gRPC.
 func probeEnforcerHealth(target string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

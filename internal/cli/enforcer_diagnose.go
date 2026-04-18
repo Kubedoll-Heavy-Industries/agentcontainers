@@ -46,7 +46,7 @@ func runEnforcerDiagnose(cmd *cobra.Command, skipDocker bool) error {
 	out := cmd.OutOrStdout()
 	var checks []diagCheck
 
-	_, _ = fmt.Fprintln(out, "ac-enforcer diagnostics")
+	_, _ = fmt.Fprintln(out, "agentcontainer-enforcer diagnostics")
 	_, _ = fmt.Fprintln(out, strings.Repeat("─", 50))
 
 	// Check 1: Platform

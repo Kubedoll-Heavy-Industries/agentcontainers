@@ -73,7 +73,7 @@ Uses the Dockerfile and build context specified in the config's "build" section.
 Optionally pushes to a registry and signs the artifact with Sigstore cosign.
 
 Use --policy to bake an org policy into the image as a typed OCI layer so that
-workspaces derived from this base automatically inherit the policy at ac run time.
+workspaces derived from this base automatically inherit the policy at agentcontainer run time.
 
 Use --org-sign-key to annotate the policy layer with a detached Ed25519
 signature over the layer descriptor ({"keyid","sig","algo"} JSON). At run
@@ -150,7 +150,7 @@ func runBuildWithDeps(cmd *cobra.Command, configPath, tag string, sign bool, key
 
 	// 2. Validate: build section must exist.
 	if cfg.Build == nil {
-		return fmt.Errorf("build: config has no 'build' section (use 'image' with 'ac run' instead)")
+		return fmt.Errorf("build: config has no 'build' section (use 'image' with 'agentcontainer run' instead)")
 	}
 
 	// 3. Determine the image tag.
