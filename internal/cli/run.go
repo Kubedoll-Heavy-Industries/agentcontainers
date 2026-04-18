@@ -96,13 +96,13 @@ func loadConfig(configPath string) (*config.AgentContainer, string, error) {
 // When a lockfile exists next to cfgPath and contains a pinned image digest,
 // the returned reference is imageTag + "@" + digest (e.g.
 // "myrepo/myimage:v1@sha256:abc..."). This prevents TOCTOU attacks (F-4)
-// where a mutable tag is mutated between `ac lock` and `ac run` to point at
+// where a mutable tag is mutated between `agentcontainer lock` and `agentcontainer run` to point at
 // an image with a weaker or absent policy layer.
 //
 // If no lockfile exists, the lockfile has no image entry, or the lockfile
 // cannot be loaded, the original imageTag is returned unchanged and a warning
 // is logged. This is a graceful degradation: environments that have not yet
-// run `ac lock` continue to work.
+// run `agentcontainer lock` continue to work.
 func policyImageRef(imageTag, cfgPath string) string {
 	if imageTag == "" || cfgPath == "" {
 		return imageTag
@@ -159,7 +159,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	}
 
 	// Use the lockfile-pinned digest when available to prevent TOCTOU attacks
-	// (F-4): a mutable tag can be mutated between `ac lock` and `ac run` to
+	// (F-4): a mutable tag can be mutated between `agentcontainer lock` and `agentcontainer run` to
 	// point at a different image with a weaker or absent policy layer.
 	// Pinning to the lockfile digest ensures the same manifest is inspected
 	// regardless of tag mutation.
@@ -198,7 +198,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	}
 	if auditLog != nil {
 		defer auditLog.Close() //nolint:errcheck
-		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "ac"},
+		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "agentcontainer"},
 			audit.WithDetail("session_start"), audit.WithResource(cfgPath)); logErr != nil {
 			logger.Warn("failed to write audit entry", zap.Error(logErr))
 		}
@@ -334,7 +334,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 
 	// 7b. Log container started and start secret rotation.
 	if auditLog != nil {
-		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "ac"},
+		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "agentcontainer"},
 			audit.WithDetail("container_started"),
 			audit.WithMetadata("container_id", session.ContainerID)); logErr != nil {
 			logger.Warn("failed to write audit entry", zap.Error(logErr))
@@ -431,7 +431,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 
 	// 10. Cleanup: stop the container.
 	if auditLog != nil {
-		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "ac"},
+		if logErr := auditLog.Log(audit.EventLifecycle, audit.Actor{Type: "system", Name: "agentcontainer"},
 			audit.WithDetail("container_stopped"),
 			audit.WithMetadata("container_id", session.ContainerID)); logErr != nil {
 			logger.Warn("failed to write audit entry", zap.Error(logErr))
@@ -800,4 +800,3 @@ func runEnforcerLiveness(ctx context.Context, cancel context.CancelFunc, addr st
 		}
 	}
 }
-

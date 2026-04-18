@@ -34,10 +34,10 @@ with verifiable build provenance. It validates:
   - The source repository matches expectations
 
 Examples:
-  ac attest ghcr.io/org/image@sha256:abc123...
-  ac attest --min-level 3 ghcr.io/org/image@sha256:abc123...
-  ac attest --workflow docker.yml --source-repo org/repo ghcr.io/org/image:latest
-  ac attest --json ghcr.io/org/image@sha256:abc123...`,
+  agentcontainer attest ghcr.io/org/image@sha256:abc123...
+  agentcontainer attest --min-level 3 ghcr.io/org/image@sha256:abc123...
+  agentcontainer attest --workflow docker.yml --source-repo org/repo ghcr.io/org/image:latest
+  agentcontainer attest --json ghcr.io/org/image@sha256:abc123...`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if minLevel < 1 || minLevel > 4 {

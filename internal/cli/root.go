@@ -14,9 +14,9 @@ var (
 
 func newRootCmd(version, commit, date string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ac",
+		Use:   "agentcontainer",
 		Short: "Immutable, reproducible, least-privilege runtime environments for AI agents",
-		Long: `ac (agentcontainers) extends devcontainers with security policy,
+		Long: `agentcontainer extends devcontainers with security policy,
 supply chain verification, and human-in-the-loop permission approval
 for AI agent runtime environments.`,
 		SilenceUsage:  true,

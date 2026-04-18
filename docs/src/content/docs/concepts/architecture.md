@@ -11,7 +11,7 @@ agentcontainers uses a four-layer model to isolate AI agents while giving them c
 Layer 1: User / IDE / CLI
            │
            ▼
-Layer 2: agentcontainer Runtime (ac binary)
+Layer 2: agentcontainer Runtime (agentcontainer binary)
          ├── Policy Engine
          ├── Provenance Verifier
          ├── Secrets Manager
@@ -32,7 +32,7 @@ Layer 4: Agent + MCP Servers + Skills
 
 ### Layer 1: User interface
 
-The user interacts through the `ac` CLI or an IDE extension. Commands like `ac run`, `ac exec`, and `ac stop` drive the lifecycle.
+The user interacts through the `agentcontainer` CLI or an IDE extension. Commands like `agentcontainer run`, `agentcontainer exec`, and `agentcontainer stop` drive the lifecycle.
 
 ### Layer 2: agentcontainer Runtime
 
@@ -60,7 +60,7 @@ The agent, its MCP servers, and skills run inside the container. They see only t
 
 ## How a request flows through the system
 
-1. `ac run` loads `agentcontainer.json` and resolves the config chain
+1. `agentcontainer run` loads `agentcontainer.json` and resolves the config chain
 2. The policy engine merges org policy (deny wins)
 3. The provenance verifier checks the lockfile against the registry
 4. The Secrets Manager resolves all declared secrets via providers
@@ -76,8 +76,8 @@ The agent, its MCP servers, and skills run inside the container. They see only t
 Single-container isolation via Docker Engine API. Suitable for most use cases.
 
 ```bash
-ac run                      # auto-detects Docker
-ac run --runtime docker     # explicit
+agentcontainer run                      # auto-detects Docker
+agentcontainer run --runtime docker     # explicit
 ```
 
 ### Compose
@@ -85,7 +85,7 @@ ac run --runtime docker     # explicit
 Multi-container orchestration for MCP server sidecars. Uses Docker Compose SDK. Each MCP server runs in its own container with isolated secrets.
 
 ```bash
-ac run --runtime compose
+agentcontainer run --runtime compose
 ```
 
 ### Sandbox
@@ -93,7 +93,7 @@ ac run --runtime compose
 Docker Sandbox microVMs for full agent isolation with a private Docker daemon. Uses gVisor for an additional isolation layer.
 
 ```bash
-ac run --runtime sandbox
+agentcontainer run --runtime sandbox
 ```
 
 Runtime auto-detection: `--runtime auto` probes for Sandbox availability, falls back to Docker.

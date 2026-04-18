@@ -150,7 +150,7 @@ func TestSignAllFromLockfile(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img111",
@@ -211,7 +211,7 @@ func TestSignAllEmptyLockfile(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved:    config.ResolvedArtifacts{},
 	}
 	writeLockfileHelper(t, filepath.Join(dir, config.LockfileName), &lf)
@@ -256,7 +256,7 @@ func TestSignAllPartialFailure(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img111",
@@ -508,7 +508,7 @@ func TestCollectSignableRefs(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -567,7 +567,7 @@ func TestCollectSignableRefsNoTools(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -601,7 +601,7 @@ func TestCollectSignableRefsUnlockedSkipped(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -629,7 +629,7 @@ func TestSignAllWithCustomLockfilePath(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc",
@@ -673,7 +673,7 @@ func TestSignAllWithRekorURL(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc",

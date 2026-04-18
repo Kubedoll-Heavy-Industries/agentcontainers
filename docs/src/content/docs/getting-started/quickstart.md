@@ -12,18 +12,18 @@ description: Install agentcontainers and run your first agent container.
 
 ```bash
 # From source
-go install github.com/Kubedoll-Heavy-Industries/agentcontainers/cmd/ac@latest
+go install github.com/Kubedoll-Heavy-Industries/agentcontainers/cmd/agentcontainer@latest
 
 # Or build from this repo
 git clone https://github.com/Kubedoll-Heavy-Industries/agentcontainers.git
 cd agentcontainers
-go build -o ac ./cmd/ac
+go build -o agentcontainer ./cmd/agentcontainer
 ```
 
 ## Create a config
 
 ```bash
-ac init
+agentcontainer init
 ```
 
 This creates an `agentcontainer.json` in your workspace:
@@ -52,7 +52,7 @@ This creates an `agentcontainer.json` in your workspace:
 ## Run
 
 ```bash
-ac run
+agentcontainer run
 ```
 
 This builds or pulls the image, starts the container with hardened security defaults, and attaches the BPF enforcer sidecar.
@@ -60,13 +60,13 @@ This builds or pulls the image, starts the container with hardened security defa
 ## Exec into the container
 
 ```bash
-ac exec my-agent -- bash
+agentcontainer exec my-agent -- bash
 ```
 
 ## Stop
 
 ```bash
-ac stop my-agent
+agentcontainer stop my-agent
 ```
 
 ## Next steps

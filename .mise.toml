@@ -31,7 +31,7 @@ run = "go test -race -coverprofile=coverage.out ./... && go tool cover -html=cov
 description = "Run tests with coverage"
 
 [tasks.build]
-run = "go build -o tmp/ac ./cmd/ac"
+run = "go build -o tmp/agentcontainer ./cmd/agentcontainer"
 
 [tasks.dev]
 run = "air"

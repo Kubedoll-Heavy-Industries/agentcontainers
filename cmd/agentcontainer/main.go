@@ -1,4 +1,4 @@
-// Package main provides the entry point for the ac CLI.
+// Package main provides the entry point for the agentcontainer CLI.
 package main
 
 import (

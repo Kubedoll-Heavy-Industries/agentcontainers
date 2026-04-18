@@ -95,7 +95,7 @@ func runLock(cmd *cobra.Command, configPath, outputPath string) error {
 	lf := &config.Lockfile{
 		Version:     1,
 		GeneratedAt: now,
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved:    config.ResolvedArtifacts{},
 	}
 

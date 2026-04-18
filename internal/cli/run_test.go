@@ -527,7 +527,7 @@ func TestPolicyImageRef_WithLockfile(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     pinnedDigest,
@@ -547,8 +547,8 @@ func TestPolicyImageRef_WithLockfile(t *testing.T) {
 }
 
 // TestPolicyImageRef_NoLockfile verifies that policyImageRef falls back to the
-// mutable tag when no lockfile exists (graceful degradation for `ac run`
-// without a prior `ac lock`).
+// mutable tag when no lockfile exists (graceful degradation for `agentcontainer run`
+// without a prior `agentcontainer lock`).
 func TestPolicyImageRef_NoLockfile(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "agentcontainer.json")
@@ -570,7 +570,7 @@ func TestPolicyImageRef_LockfileNoImageDigest(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved:    config.ResolvedArtifacts{},
 	}
 	if err := config.WriteLockfile(filepath.Join(dir, config.LockfileName), lf); err != nil {
@@ -594,7 +594,7 @@ func TestPolicyImageRef_StripExistingDigest(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     pinnedDigest,

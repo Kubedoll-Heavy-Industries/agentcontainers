@@ -1,56 +1,56 @@
 ---
 title: CLI Reference
-description: All ac commands and their usage.
+description: All agentcontainer commands and their usage.
 ---
 
 ## Core commands
 
 | Command | Description |
 |---|---|
-| `ac init` | Initialize an `agentcontainer.json` in the current workspace |
-| `ac run` | Build/pull image and start the agent container |
-| `ac exec <name> -- <cmd>` | Execute a command in a running container |
-| `ac stop <name>` | Stop a running container |
-| `ac build` | Build the container image |
-| `ac ps` | List running agent containers |
-| `ac logs <name>` | View container logs |
-| `ac gc` | Garbage collect stopped containers and dangling images |
+| `agentcontainer init` | Initialize an `agentcontainer.json` in the current workspace |
+| `agentcontainer run` | Build/pull image and start the agent container |
+| `agentcontainer exec <name> -- <cmd>` | Execute a command in a running container |
+| `agentcontainer stop <name>` | Stop a running container |
+| `agentcontainer build` | Build the container image |
+| `agentcontainer ps` | List running agent containers |
+| `agentcontainer logs <name>` | View container logs |
+| `agentcontainer gc` | Garbage collect stopped containers and dangling images |
 
 ## Supply chain commands
 
 | Command | Description |
 |---|---|
-| `ac lock` | Generate a lockfile pinning image digests, MCP servers, and org policy |
-| `ac verify` | Verify the lockfile against the registry (signatures, SBOM, staleness) |
-| `ac sign` | Sign OCI artifacts with Sigstore |
-| `ac attest` | Create SLSA provenance attestations |
-| `ac sbom` | Generate SBOM for the container image |
-| `ac drift` | Check for semantic drift between locked and current state |
+| `agentcontainer lock` | Generate a lockfile pinning image digests, MCP servers, and org policy |
+| `agentcontainer verify` | Verify the lockfile against the registry (signatures, SBOM, staleness) |
+| `agentcontainer sign` | Sign OCI artifacts with Sigstore |
+| `agentcontainer attest` | Create SLSA provenance attestations |
+| `agentcontainer sbom` | Generate SBOM for the container image |
+| `agentcontainer drift` | Check for semantic drift between locked and current state |
 
 ## Enforcement commands
 
 | Command | Description |
 |---|---|
-| `ac enforcer start` | Start the BPF enforcer sidecar |
-| `ac enforcer stop` | Stop the enforcer sidecar |
-| `ac enforcer status` | Show enforcer status and enforcement stats |
-| `ac enforcer diagnose` | Run diagnostics on enforcer connectivity and BPF programs |
+| `agentcontainer enforcer start` | Start the BPF enforcer sidecar |
+| `agentcontainer enforcer stop` | Stop the enforcer sidecar |
+| `agentcontainer enforcer status` | Show enforcer status and enforcement stats |
+| `agentcontainer enforcer diagnose` | Run diagnostics on enforcer connectivity and BPF programs |
 
 ## Audit commands
 
 | Command | Description |
 |---|---|
-| `ac audit events` | Stream enforcement events in real time |
-| `ac audit summary` | Show aggregated enforcement statistics |
+| `agentcontainer audit events` | Stream enforcement events in real time |
+| `agentcontainer audit summary` | Show aggregated enforcement statistics |
 
 ## Policy commands
 
 | Command | Description |
 |---|---|
-| `ac policy pull <ref>` | Fetch an org policy from an OCI registry |
-| `ac policy push <file> <ref>` | Push a local policy file to an OCI registry |
-| `ac policy validate <file>` | Validate a policy file for internal consistency |
-| `ac policy diff <old> <new>` | Show differences between two policy files |
+| `agentcontainer policy pull <ref>` | Fetch an org policy from an OCI registry |
+| `agentcontainer policy push <file> <ref>` | Push a local policy file to an OCI registry |
+| `agentcontainer policy validate <file>` | Validate a policy file for internal consistency |
+| `agentcontainer policy diff <old> <new>` | Show differences between two policy files |
 
 ## Global flags
 

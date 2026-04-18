@@ -87,7 +87,7 @@ func buildCycloneDX(meta *SkillMetadata, files []fileEntry, contentHash string, 
 	if acVersion != "" {
 		doc.Metadata.Tools = &CDXTools{
 			Components: []CDXComponent{
-				{Type: "application", Name: "ac", Version: acVersion},
+				{Type: "application", Name: "agentcontainer", Version: acVersion},
 			},
 		}
 	}

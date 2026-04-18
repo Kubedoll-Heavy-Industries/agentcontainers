@@ -185,7 +185,7 @@ Configure the BPF enforcer sidecar:
 | Field | Description |
 |---|---|
 | `image` | OCI reference for the ac-enforcer container |
-| `required` | If `true` (default), `ac run` fails if the sidecar cannot start. Set to `false` only for local development. |
+| `required` | If `true` (default), `agentcontainer run` fails if the sidecar cannot start. Set to `false` only for local development. |
 | `addr` | gRPC address of a pre-existing sidecar (skip auto-start) |
 
 ## Complete example

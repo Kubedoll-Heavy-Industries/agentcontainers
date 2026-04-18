@@ -51,8 +51,8 @@ func runComponentInspect(cmd *cobra.Command, ref string) error {
 
 	_, _ = fmt.Fprintf(out, "Component:  %s\n", ref)
 	_, _ = fmt.Fprintf(out, "Status:     WIT introspection requires a running ac-enforcer with Wassette support\n")
-	_, _ = fmt.Fprintf(out, "            Start the enforcer with: ac enforcer start\n")
-	_, _ = fmt.Fprintf(out, "            Then re-run: ac component inspect %s\n", ref)
+	_, _ = fmt.Fprintf(out, "            Start the enforcer with: agentcontainer enforcer start\n")
+	_, _ = fmt.Fprintf(out, "            Then re-run: agentcontainer component inspect %s\n", ref)
 
 	return nil
 }

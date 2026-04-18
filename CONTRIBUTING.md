@@ -21,7 +21,7 @@ Thank you for your interest in contributing. This document covers how to get set
 git clone https://github.com/Kubedoll-Heavy-Industries/agentcontainers
 cd agentcontainers
 mise install        # installs Go, golangci-lint, air, and other toolchain deps
-mise run build      # builds the ac binary to tmp/ac
+mise run build      # builds the agentcontainer binary to tmp/agentcontainer
 mise run test       # go test -race ./...
 ```
 
@@ -37,7 +37,7 @@ All three must pass with no errors or warnings.
 
 | Path | What's there |
 |------|-------------|
-| `cmd/ac/` | Binary entry point. Build info injected via ldflags. |
+| `cmd/agentcontainer/` | Binary entry point. Build info injected via ldflags. |
 | `internal/cli/` | Cobra command definitions. One file per command: `newXxxCmd()` + `runXxx()`. |
 | `internal/config/` | Schema types, JSONC parser, validator, lockfile. |
 | `internal/container/` | Runtime interface (`Runtime`) and backends: Docker, Compose, Sandbox. |
@@ -84,7 +84,7 @@ These interfaces are shared across packages. Changing them affects everyone:
 
 - `internal/container/runtime.go` — the `Runtime` interface and `Session`, `StartOptions`, `ExecResult` types.
 - `internal/config/config.go` — the `AgentContainer` struct hierarchy. Adding fields is safe; removing or changing existing fields requires a migration path.
-- `cmd/ac/main.go` — entry point (rarely needs changes).
+- `cmd/agentcontainer/main.go` — entry point (rarely needs changes).
 
 Coordinate with maintainers before modifying these.
 

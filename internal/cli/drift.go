@@ -46,10 +46,10 @@ In enforce mode (--enforce), threshold-based enforcement is applied:
   - Low signals are auto-approved
 
 Examples:
-  ac drift old-skillbom.json new-skillbom.json
-  ac drift --strict old-skillbom.json new-skillbom.json
-  ac drift --enforce old-skillbom.json new-skillbom.json
-  ac drift --json old-skillbom.json new-skillbom.json`,
+  agentcontainer drift old-skillbom.json new-skillbom.json
+  agentcontainer drift --strict old-skillbom.json new-skillbom.json
+  agentcontainer drift --enforce old-skillbom.json new-skillbom.json
+  agentcontainer drift --json old-skillbom.json new-skillbom.json`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDrift(cmd, args[0], args[1], outputJSON, strict, enforce)

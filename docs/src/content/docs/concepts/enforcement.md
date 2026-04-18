@@ -121,7 +121,7 @@ This is the human-in-the-loop layer for runtime escalation.
 The enforcer uses a **gRPC sidecar** architecture:
 
 ```
-ac runtime ──gRPC──► ac-enforcer sidecar ──BPF──► kernel
+agentcontainer runtime ──gRPC──► ac-enforcer sidecar ──BPF──► kernel
 ```
 
 - The Go runtime sends policy via gRPC to the Rust enforcer sidecar
@@ -154,10 +154,10 @@ Events are emitted to per-domain ring buffers (`NET_EVENTS`, `FS_EVENTS`, `PROC_
 View enforcement stats:
 
 ```bash
-ac enforcer status
-ac enforcer diagnose
-ac audit events
-ac audit summary
+agentcontainer enforcer status
+agentcontainer enforcer diagnose
+agentcontainer audit events
+agentcontainer audit summary
 ```
 
 ## Enforcement in Sandbox mode

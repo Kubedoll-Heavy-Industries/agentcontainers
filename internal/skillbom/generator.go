@@ -24,7 +24,7 @@ type Generator interface {
 // directory, enumerates files, parses metadata, computes content hashes,
 // and builds a CycloneDX 1.7 document.
 type DefaultGenerator struct {
-	// ACVersion is the ac binary version string included in the BOM metadata.
+	// ACVersion is the agentcontainer binary version string included in the BOM metadata.
 	ACVersion string
 }
 

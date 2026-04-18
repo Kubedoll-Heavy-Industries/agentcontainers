@@ -33,10 +33,10 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 
 | Milestone | Status | What shipped |
 |-----------|--------|-------------|
-| M0: Foundation | Shipped | `ac init/run/exec/ps/stop/logs/save/audit`, schema, Docker runtime, approval broker, Rust eBPF enforcer |
-| M1: Verify | Shipped | `ac lock/verify/shim/sbom/component`, lockfile, OCI digest pinning, WASM tool hosting |
+| M0: Foundation | Shipped | `agentcontainer init/run/exec/ps/stop/logs/save/audit`, schema, Docker runtime, approval broker, Rust eBPF enforcer |
+| M1: Verify | Shipped | `agentcontainer lock/verify/shim/sbom/component`, lockfile, OCI digest pinning, WASM tool hosting |
 | M2: Sandbox | Shipped | Docker Sandbox VM backend, in-VM enforcement, compose-in-sandbox, multi-arch enforcer image |
-| M3: Attest | Shipped | `ac sign`, Sigstore integration, SLSA provenance, drift threshold enforcement, offline verification |
+| M3: Attest | Shipped | `agentcontainer sign`, Sigstore integration, SLSA provenance, drift threshold enforcement, offline verification |
 | M4: Enterprise | Mostly complete | Org policy as OCI layer, secrets (Vault/Infisical/1Password/OIDC), per-MCP LSM credential enforcement |
 | M5: Ecosystem | Planning | VS Code extension, Firecracker backend, Linux K8s, MCP registry integration |
 
@@ -57,20 +57,20 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 git clone https://github.com/Kubedoll-Heavy-Industries/agentcontainers
 cd agentcontainers
 mise install
-mise run build       # builds to tmp/ac
+mise run build       # builds to tmp/agentcontainer
 ```
 
 Or install directly:
 
 ```bash
-go install github.com/Kubedoll-Heavy-Industries/agentcontainers/cmd/ac@latest
+go install github.com/Kubedoll-Heavy-Industries/agentcontainers/cmd/agentcontainer@latest
 ```
 
 ### Initialize an agent container
 
 ```bash
 # In your project directory
-ac init
+agentcontainer init
 
 # This generates agentcontainer.json. If a devcontainer.json already exists,
 # it is used as the base and extended with agent-specific defaults.
@@ -79,15 +79,15 @@ ac init
 ### Pin dependencies
 
 ```bash
-ac lock    # resolves all OCI references to digests and writes agentcontainer-lock.json
-ac verify  # verifies lockfile coverage and optionally checks signatures
+agentcontainer lock    # resolves all OCI references to digests and writes agentcontainer-lock.json
+agentcontainer verify  # verifies lockfile coverage and optionally checks signatures
 ```
 
 ### Run an agent
 
 ```bash
-ac run     # starts the container + enforcer sidecar
-ac exec -- claude   # executes inside the container with approval gating
+agentcontainer run     # starts the container + enforcer sidecar
+agentcontainer exec -- claude   # executes inside the container with approval gating
 ```
 
 ---
@@ -136,7 +136,7 @@ Full schema reference: [SPEC.md](./SPEC.md)
 ┌─────────────────────────────────────────────────────┐
 │  Host (trusted)                                     │
 │                                                     │
-│  ac CLI ──────────────────────────────────────────  │
+│  agentcontainer CLI ─────────────────────────────  │
 │     │                                               │
 │     ▼                                               │
 │  Agentcontainer Runtime                             │
@@ -168,7 +168,7 @@ For full architecture details, threat model, and design decisions: [SPEC.md](./S
 ## Development
 
 ```bash
-mise run build          # build binary to tmp/ac
+mise run build          # build binary to tmp/agentcontainer
 mise run test           # go test -race ./...
 mise run test:cover     # tests with coverage report
 mise run lint           # golangci-lint
@@ -182,7 +182,7 @@ Repository layout:
 
 | Path | What's there |
 |------|-------------|
-| `cmd/ac/` | Binary entry point |
+| `cmd/agentcontainer/` | Binary entry point |
 | `internal/cli/` | Cobra command definitions, one file per command |
 | `internal/config/` | Schema types, JSONC parser, validator |
 | `internal/container/` | Runtime backends (Docker, Compose, Sandbox) |

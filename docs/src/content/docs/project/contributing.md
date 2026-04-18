@@ -9,7 +9,7 @@ description: How to contribute to agentcontainers.
 git clone https://github.com/Kubedoll-Heavy-Industries/agentcontainers.git
 cd agentcontainers
 mise install    # Install toolchain
-mise run build  # Build to tmp/ac
+mise run build  # Build to tmp/agentcontainer
 mise run test   # Run unit tests
 ```
 

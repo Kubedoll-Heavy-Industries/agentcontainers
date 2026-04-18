@@ -21,8 +21,8 @@ body:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior.
       placeholder: |
-        1. Run `ac init ...`
-        2. Run `ac run ...`
+        1. Run `agentcontainer init ...`
+        2. Run `agentcontainer run ...`
         3. See error
     validations:
       required: true
@@ -44,10 +44,10 @@ body:
       required: true
 
   - type: input
-    id: ac-version
+    id: agentcontainer-version
     attributes:
-      label: ac Version
-      description: Output of `ac version`
+      label: agentcontainer Version
+      description: Output of `agentcontainer version`
       placeholder: "v0.1.0 (commit abc1234)"
     validations:
       required: true

@@ -17,7 +17,7 @@ ARG TARGETARCH=amd64
 RUN --mount=type=cache,target=/root/.cache/go-build \
   CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
   go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
-  -o /out/ac ./cmd/ac
+  -o /out/agentcontainer ./cmd/agentcontainer
 
 FROM gcr.io/distroless/static-debian12:nonroot AS runtime
 
@@ -34,5 +34,5 @@ LABEL org.opencontainers.image.title="agentcontainers" \
   org.opencontainers.image.revision=$COMMIT \
   org.opencontainers.image.created=$DATE
 
-COPY --from=build /out/ac /ac
-ENTRYPOINT ["/ac"]
+COPY --from=build /out/agentcontainer /agentcontainer
+ENTRYPOINT ["/agentcontainer"]

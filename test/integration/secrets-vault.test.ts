@@ -66,8 +66,8 @@ describe("secrets: vault provider with OpenBao + enforcer", () => {
   const rootToken = "root-token-for-test";
 
   beforeAll(async () => {
-    // 1. Build the ac binary.
-    execSync("go build -o tmp/ac ./cmd/ac", { cwd: ROOT, stdio: "pipe" });
+    // 1. Build the agentcontainer binary.
+    execSync("go build -o tmp/agentcontainer ./cmd/agentcontainer", { cwd: ROOT, stdio: "pipe" });
 
     // 2. Verify enforcer image exists (built externally).
     try {

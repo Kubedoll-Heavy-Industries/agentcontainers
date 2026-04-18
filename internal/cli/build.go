@@ -82,12 +82,12 @@ policy layers signed by a trusted org key, preventing adversaries with image
 write access from injecting permissive policy overrides.
 
 Examples:
-  ac build                              # Build from auto-detected config
-  ac build --tag myregistry.io/app:v1   # Build with custom tag
-  ac build --push --sign                # Build, push, and sign (keyless)
-  ac build --push --sign --key cosign.key  # Build, push, and sign with key
-  ac build --push --policy policy.json  # Build, inject policy layer, push
-  ac build --push --policy policy.json --org-sign-key org.key  # signed policy`,
+  agentcontainer build                              # Build from auto-detected config
+  agentcontainer build --tag myregistry.io/app:v1   # Build with custom tag
+  agentcontainer build --push --sign                # Build, push, and sign (keyless)
+  agentcontainer build --push --sign --key cosign.key  # Build, push, and sign with key
+  agentcontainer build --push --policy policy.json  # Build, inject policy layer, push
+  agentcontainer build --push --policy policy.json --org-sign-key org.key  # signed policy`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBuild(cmd, configPath, tag, sign, keyPath, push, policyPath, policySignKey, overrideBasePolicy)
 		},

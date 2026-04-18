@@ -37,7 +37,7 @@ func TestRedTeam_F1_FetchErrorYieldsPermissivePolicy(t *testing.T) {
 	// FIXED: err must be non-nil so ac run fails closed.
 	if err == nil {
 		t.Errorf("REGRESSION F-1: ExtractPolicy returned nil error on registry 500 — " +
-			"ac run will proceed without org policy enforcement.")
+			"agentcontainer run will proceed without org policy enforcement.")
 	}
 }
 

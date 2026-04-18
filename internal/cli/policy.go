@@ -34,7 +34,7 @@ time via 'ac build --policy'.`,
 	return cmd
 }
 
-// newPolicyValidateCmd returns the "ac policy validate <file>" command which
+// newPolicyValidateCmd returns the "agentcontainer policy validate <file>" command which
 // loads and validates a local policy file without pushing it.
 func newPolicyValidateCmd() *cobra.Command {
 	return &cobra.Command{
@@ -55,7 +55,7 @@ func runPolicyValidate(cmd *cobra.Command, filePath string) error {
 	return nil
 }
 
-// newPolicyDiffCmd returns the "ac policy diff <ref1> <ref2>" command which
+// newPolicyDiffCmd returns the "agentcontainer policy diff <ref1> <ref2>" command which
 // compares the policy layer embedded in two image references (PRD-017).
 // Exits non-zero if the policies differ (useful in CI).
 func newPolicyDiffCmd() *cobra.Command {
@@ -68,8 +68,8 @@ Exits 0 when the policies are identical, non-zero when they differ.
 Useful in CI before promoting a new base image to review policy changes.
 
 Examples:
-  ac policy diff ghcr.io/myorg/base:v1 ghcr.io/myorg/base:v2
-  ac policy diff ghcr.io/myorg/base@sha256:abc ghcr.io/myorg/base@sha256:def`,
+  agentcontainer policy diff ghcr.io/myorg/base:v1 ghcr.io/myorg/base:v2
+  agentcontainer policy diff ghcr.io/myorg/base@sha256:abc ghcr.io/myorg/base@sha256:def`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPolicyDiff(cmd, args[0], args[1])
@@ -116,7 +116,7 @@ func runPolicyDiff(cmd *cobra.Command, ref1, ref2 string) error {
 	return fmt.Errorf("policies differ")
 }
 
-// newPolicyTrustCmd returns the "ac policy trust" command group for managing
+// newPolicyTrustCmd returns the "agentcontainer policy trust" command group for managing
 // the local org policy trust store (~/.agentcontainers/trusted-org-keys.json).
 func newPolicyTrustCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -160,8 +160,8 @@ The key is identified by the SHA-256 fingerprint (keyid) of its raw bytes.
 Use 'ac policy trust list' to see the stored keys after adding.
 
 Examples:
-  ac policy trust add org-policy.pub
-  ac policy trust add /etc/agentcontainers/org.pub --comment "Acme Corp policy key"`,
+  agentcontainer policy trust add org-policy.pub
+  agentcontainer policy trust add /etc/agentcontainers/org.pub --comment "Acme Corp policy key"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPolicyTrustAdd(cmd, args[0], storePath, comment)

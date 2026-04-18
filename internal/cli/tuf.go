@@ -34,7 +34,7 @@ This command:
 2. Copies the TUF root directory tree to the specified output directory
 
 The exported directory can then be transferred to an air-gapped system and
-used with "ac verify --offline --trusted-root <dir>/root.json".`,
+used with "agentcontainer verify --offline --trusted-root <dir>/root.json".`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runTUFExport(cmd, outputDir)
 		},

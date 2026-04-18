@@ -61,7 +61,7 @@ func TestComponentInspectOutput(t *testing.T) {
 			wantOut: []string{
 				"Component:  ghcr.io/microsoft/time-server-js:latest",
 				"Status:",
-				"ac enforcer start",
+				"agentcontainer enforcer start",
 			},
 		},
 		{
@@ -69,7 +69,7 @@ func TestComponentInspectOutput(t *testing.T) {
 			ref:  "ghcr.io/mcp-tools/filesystem:1.0@sha256:abc123",
 			wantOut: []string{
 				"Component:  ghcr.io/mcp-tools/filesystem:1.0@sha256:abc123",
-				"ac enforcer start",
+				"agentcontainer enforcer start",
 			},
 		},
 	}

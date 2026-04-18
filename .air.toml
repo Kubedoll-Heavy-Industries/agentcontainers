@@ -3,8 +3,8 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/ac ./cmd/ac"
+cmd = "go build -o ./tmp/agentcontainer ./cmd/agentcontainer"
 delay = 1000
-entrypoint = ["./tmp/ac"]
+entrypoint = ["./tmp/agentcontainer"]
 exclude_dir = ["assets", "tmp", "vendor", "testdata", "prd"]
 exclude_regex = ["_test\\.go"]

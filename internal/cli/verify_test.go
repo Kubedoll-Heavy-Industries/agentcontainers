@@ -32,7 +32,7 @@ func TestVerifyPasses(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -86,7 +86,7 @@ func TestVerifyWarnsOnMissing(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved:    config.ResolvedArtifacts{},
 	}
 	writeLockfileHelper(t, filepath.Join(dir, config.LockfileName), &lf)
@@ -125,7 +125,7 @@ func TestVerifyStrictFails(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved:    config.ResolvedArtifacts{},
 	}
 	writeLockfileHelper(t, filepath.Join(dir, config.LockfileName), &lf)
@@ -263,7 +263,7 @@ func TestVerifyCustomLockfilePath(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -338,7 +338,7 @@ func TestVerifyRegistryDigestMatch(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     lockedDigest,
@@ -391,7 +391,7 @@ func TestVerifyRegistryDigestMismatch(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     lockedDigest,
@@ -449,7 +449,7 @@ func TestVerifyRegistryDigestMismatchStrict(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     lockedDigest,
@@ -519,7 +519,7 @@ func TestVerifyRegistryMCPAndSkills(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     imageDigest,
@@ -586,7 +586,7 @@ func TestVerifyNoRegistryFlag(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     lockedDigest,
@@ -656,7 +656,7 @@ func TestVerifyRegistryWithBearerAuth(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     lockedDigest,
@@ -709,7 +709,7 @@ func TestVerifyRegistryDigests(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:image-old",
@@ -774,7 +774,7 @@ func TestVerifyRegistryDigestsResolverError(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc",
@@ -840,7 +840,7 @@ func TestVerifyWithSignaturesPass(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -881,7 +881,7 @@ func TestVerifyWithSignaturesFail(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -923,7 +923,7 @@ func TestVerifyWithSignaturesStrictFail(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -979,7 +979,7 @@ func TestVerifySignaturesMultipleArtifacts(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img123",
@@ -1035,7 +1035,7 @@ func TestVerifyWithoutSignaturesFlag(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1077,7 +1077,7 @@ func TestVerifySignaturesUnit(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -1137,7 +1137,7 @@ func TestVerifyOfflineWithKeyPass(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1184,7 +1184,7 @@ func TestVerifyOfflineWithBundlePass(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1234,7 +1234,7 @@ func TestVerifyOfflineDisablesRegistry(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1301,7 +1301,7 @@ func TestVerifyOfflineSignaturesShowAnnotations(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img123",
@@ -1358,7 +1358,7 @@ func TestVerifyOfflineFailsWithStrict(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1398,7 +1398,7 @@ func TestVerifyOfflinePassesOptsToSigning(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -1459,7 +1459,7 @@ func TestVerifySignaturesUnitOffline(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -1522,7 +1522,7 @@ func TestVerifyProvenancePass(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1585,7 +1585,7 @@ func TestVerifyProvenanceFailsUntrustedBuilder(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1646,7 +1646,7 @@ func TestVerifyProvenanceStrictFails(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1691,7 +1691,7 @@ func TestVerifyProvenanceNoRequirements(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1745,7 +1745,7 @@ func TestVerifyProvenanceUnit(t *testing.T) {
 	lf := &config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:img",
@@ -1852,7 +1852,7 @@ func TestSaveBundles_Success(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1911,7 +1911,7 @@ func TestSaveBundles_FetchError(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
@@ -1957,7 +1957,7 @@ func TestSaveBundles_NoSaveWhenNoSigValid(t *testing.T) {
 	lf := config.Lockfile{
 		Version:     2,
 		GeneratedAt: time.Now().UTC(),
-		GeneratedBy: "ac",
+		GeneratedBy: "agentcontainer",
 		Resolved: config.ResolvedArtifacts{
 			Image: &config.ResolvedImage{
 				Digest:     "sha256:abc123",
