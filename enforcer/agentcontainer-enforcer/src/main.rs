@@ -194,8 +194,8 @@ async fn main() -> anyhow::Result<()> {
             let protocol: telemetry::OtlpProtocol = args.otlp_protocol.parse()?;
             let provider = telemetry::init_tracer_provider(endpoint, protocol)?;
 
-            let otel_layer =
-                tracing_opentelemetry::layer().with_tracer(provider.tracer("agentcontainer-enforcer"));
+            let otel_layer = tracing_opentelemetry::layer()
+                .with_tracer(provider.tracer("agentcontainer-enforcer"));
 
             tracing_subscriber::registry()
                 .with(EnvFilter::new(&args.log_level))

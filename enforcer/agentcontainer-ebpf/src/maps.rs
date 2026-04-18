@@ -9,7 +9,9 @@
 use aya_ebpf::macros::map;
 use aya_ebpf::maps::{Array, HashMap, LpmTrie, PerCpuArray, PerCpuHashMap, RingBuf};
 
-use agentcontainer_common::maps::{CgroupStats, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue};
+use agentcontainer_common::maps::{
+    CgroupStats, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
+};
 use agentcontainer_common::siphash::SipHashKey;
 
 // --- Cgroup scoping ---

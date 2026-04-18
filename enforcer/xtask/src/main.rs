@@ -30,7 +30,10 @@ fn main() -> anyhow::Result<()> {
 
 fn build_ebpf(release: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    cmd.current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../agentcontainer-ebpf"));
+    cmd.current_dir(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../agentcontainer-ebpf"
+    ));
 
     cmd.args([
         "+nightly",

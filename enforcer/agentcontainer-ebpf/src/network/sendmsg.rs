@@ -18,7 +18,9 @@ use aya_ebpf::macros::cgroup_sock_addr;
 use aya_ebpf::maps::lpm_trie::Key;
 use aya_ebpf::programs::SockAddrContext;
 
-use agentcontainer_common::events::{NetworkEvent, Verdict, COMM_MAX, STAT_NET_ALLOWED, STAT_NET_BLOCKED};
+use agentcontainer_common::events::{
+    NetworkEvent, Verdict, COMM_MAX, STAT_NET_ALLOWED, STAT_NET_BLOCKED,
+};
 use agentcontainer_common::helpers::{
     extract_v4_from_mapped, is_loopback_v4, is_loopback_v6, is_v4_mapped_v6, ntohl,
 };
