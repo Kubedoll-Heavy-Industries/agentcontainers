@@ -36,11 +36,10 @@ jobs:
 
       - name: Generate subject hashes
         id: hash
-        env:
-          ARTIFACTS: ${{ steps.goreleaser.outputs.artifacts }}
         run: |
           set -euo pipefail
-          hashes=$(cat dist/artifacts.json | jq -r '.[] | select(.type == "Binary" or .type == "Archive") | .extra.Checksum' | base64 -w0)
+          # goreleaser v2 writes checksums.txt with "sha256:hash  filename" lines
+          hashes=$(cat dist/checksums.txt | base64 -w0)
           echo "hashes=$hashes" >> "$GITHUB_OUTPUT"
 
   provenance:
