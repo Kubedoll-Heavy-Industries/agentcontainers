@@ -123,4 +123,4 @@ Full security model: see [§Security Model](#security-model) above
 | L4 | LSM file_open hook (credential gating) | Unauthorized access to secret files |
 | L5 | Container isolation (read-only rootfs, namespaces) | File system and process isolation |
 
-**Not yet implemented:** seccomp USER_NOTIF, AppArmor/SELinux profile generation, runtime anomaly detection. These are planned for future milestones.
+**Not yet implemented:** seccomp profile generation from declared capabilities, `memfd_create` hook (fileless execution), reverse shell detection (`dup2`/`dup3`), `security_capable` hook (privilege escalation detection). These are planned for future milestones.
