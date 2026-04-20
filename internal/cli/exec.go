@@ -41,7 +41,7 @@ Environment variables can be injected with -e KEY=VALUE. Secret URI schemes
 			cmdArgs := args[1:]
 
 			if len(cmdArgs) == 0 {
-				return fmt.Errorf("exec: no command specified (usage: ac exec <container-id> -- <command> [args...])")
+				return fmt.Errorf("exec: no command specified (usage: agentcontainer exec <container-id> -- <command> [args...])")
 			}
 
 			return runExec(cmd, containerID, cmdArgs, runtime, configPath, envVars)
@@ -64,10 +64,14 @@ func runExec(cmd *cobra.Command, containerID string, execCmd []string, runtimeFl
 		return fmt.Errorf("exec: %w", err)
 	}
 
-	// Load config to wire the approval broker.
+	// Load config to wire the approval broker. Config is optional for exec —
+	// the container is already running with BPF enforcement from `run`. Without
+	// a config, exec runs with default-deny approval (every command prompted).
 	cfg, cfgPath, err := loadConfig(configPath)
 	if err != nil {
-		return fmt.Errorf("exec: %w", err)
+		// No config found — run with empty capabilities (default-deny approval).
+		cfg = &config.AgentContainer{}
+		cfgPath = ""
 	}
 
 	var caps *config.Capabilities
