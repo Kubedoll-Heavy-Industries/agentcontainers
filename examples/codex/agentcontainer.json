@@ -1,0 +1,27 @@
+{
+  // OpenAI Codex CLI agent running in an agentcontainer.
+  "image": "node:22-bookworm",
+  "agent": {
+    "capabilities": {
+      "network": {
+        "egress": [
+          { "host": "api.openai.com", "port": 443 },
+          { "host": "registry.npmjs.org", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": ["codex", "node", "npm", "git"]
+      },
+      "filesystem": {
+        "read": ["/workspace"],
+        "write": ["/workspace"]
+      }
+    },
+    "secrets": {
+      "OPENAI_API_KEY": {
+        "provider": "env://OPENAI_API_KEY"
+      }
+    }
+  },
+  "postCreateCommand": "npm install -g @openai/codex"
+}

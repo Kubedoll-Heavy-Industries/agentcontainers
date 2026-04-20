@@ -1,0 +1,29 @@
+{
+  // OpenCode agent running in an agentcontainer.
+  // Requires an Anthropic API key — set ANTHROPIC_API_KEY in your environment
+  // or use a secrets provider (op://, vault://, etc.).
+  "image": "ubuntu:24.04",
+  "agent": {
+    "capabilities": {
+      "network": {
+        "egress": [
+          { "host": "api.anthropic.com", "port": 443 },
+          { "host": "opencode.ai", "port": 443 }
+        ]
+      },
+      "shell": {
+        "commands": ["opencode", "git"]
+      },
+      "filesystem": {
+        "read": ["/workspace"],
+        "write": ["/workspace"]
+      }
+    },
+    "secrets": {
+      "ANTHROPIC_API_KEY": {
+        "provider": "env://ANTHROPIC_API_KEY"
+      }
+    }
+  },
+  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash"
+}
