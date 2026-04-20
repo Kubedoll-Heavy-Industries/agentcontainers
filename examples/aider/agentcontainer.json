@@ -1,17 +1,18 @@
 {
   // Aider agent running in an agentcontainer.
-  "image": "python:3.12-bookworm",
+  // Requires an Anthropic API key — set ANTHROPIC_API_KEY in your environment.
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "agent": {
     "capabilities": {
       "network": {
         "egress": [
-          { "host": "api.anthropic.com", "port": 443 },
-          { "host": "pypi.org", "port": 443 },
-          { "host": "files.pythonhosted.org", "port": 443 }
+          { "host": "api.anthropic.com", "port": 443 }
         ]
       },
       "shell": {
-        "commands": ["aider", "python", "pip", "git"]
+        "commands": ["aider", "python3", "git"]
       },
       "filesystem": {
         "read": ["/workspace"],
@@ -23,6 +24,5 @@
         "provider": "env://ANTHROPIC_API_KEY"
       }
     }
-  },
-  "postCreateCommand": "pip install aider-chat"
+  }
 }

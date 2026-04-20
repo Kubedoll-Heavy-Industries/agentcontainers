@@ -1,12 +1,14 @@
 {
   // OpenAI Codex CLI agent running in an agentcontainer.
-  "image": "node:22-bookworm",
+  // Requires an OpenAI API key — set OPENAI_API_KEY in your environment.
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "agent": {
     "capabilities": {
       "network": {
         "egress": [
-          { "host": "api.openai.com", "port": 443 },
-          { "host": "registry.npmjs.org", "port": 443 }
+          { "host": "api.openai.com", "port": 443 }
         ]
       },
       "shell": {
@@ -22,6 +24,5 @@
         "provider": "env://OPENAI_API_KEY"
       }
     }
-  },
-  "postCreateCommand": "npm install -g @openai/codex"
+  }
 }

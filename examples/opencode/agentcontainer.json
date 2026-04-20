@@ -1,14 +1,16 @@
 {
-  // OpenCode agent running in an agentcontainer.
-  // Requires an Anthropic API key — set ANTHROPIC_API_KEY in your environment
-  // or use a secrets provider (op://, vault://, etc.).
-  "image": "ubuntu:24.04",
+  // OpenCode agent using GitHub Copilot (free tier) — no API key needed.
+  // Requires GitHub Copilot auth: run `gh auth login` or have VS Code Copilot extension installed.
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "agent": {
     "capabilities": {
       "network": {
         "egress": [
-          { "host": "api.anthropic.com", "port": 443 },
-          { "host": "opencode.ai", "port": 443 }
+          { "host": "api.github.com", "port": 443 },
+          { "host": "api.githubcopilot.com", "port": 443 },
+          { "host": "copilot-proxy.githubusercontent.com", "port": 443 }
         ]
       },
       "shell": {
@@ -18,12 +20,6 @@
         "read": ["/workspace"],
         "write": ["/workspace"]
       }
-    },
-    "secrets": {
-      "ANTHROPIC_API_KEY": {
-        "provider": "env://ANTHROPIC_API_KEY"
-      }
     }
-  },
-  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash"
+  }
 }

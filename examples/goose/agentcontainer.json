@@ -1,6 +1,9 @@
 {
   // Goose (Block) agent running in an agentcontainer.
-  "image": "ubuntu:24.04",
+  // Requires an Anthropic API key — set ANTHROPIC_API_KEY in your environment.
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "agent": {
     "capabilities": {
       "network": {
@@ -21,6 +24,5 @@
         "provider": "env://ANTHROPIC_API_KEY"
       }
     }
-  },
-  "postCreateCommand": "curl -fsSL https://github.com/block/goose/releases/latest/download/install.sh | bash"
+  }
 }

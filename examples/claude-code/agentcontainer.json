@@ -1,13 +1,14 @@
 {
   // Claude Code agent running in an agentcontainer.
   // Requires an Anthropic API key — set ANTHROPIC_API_KEY in your environment.
-  "image": "node:22-bookworm",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "agent": {
     "capabilities": {
       "network": {
         "egress": [
           { "host": "api.anthropic.com", "port": 443 },
-          { "host": "registry.npmjs.org", "port": 443 },
           { "host": "sentry.io", "port": 443 },
           { "host": "statsig.anthropic.com", "port": 443 }
         ]
@@ -25,6 +26,5 @@
         "provider": "env://ANTHROPIC_API_KEY"
       }
     }
-  },
-  "postCreateCommand": "npm install -g @anthropic-ai/claude-code"
+  }
 }
