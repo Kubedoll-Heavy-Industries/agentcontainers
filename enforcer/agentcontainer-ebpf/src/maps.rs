@@ -10,7 +10,7 @@ use aya_ebpf::macros::map;
 use aya_ebpf::maps::{Array, HashMap, LpmTrie, PerCpuArray, PerCpuHashMap, RingBuf};
 
 use agentcontainer_common::maps::{
-    CgroupStats, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
+    BindKey, CgroupStats, DenySetKey, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
 };
 use agentcontainer_common::siphash::SipHashKey;
 
@@ -124,6 +124,46 @@ pub static CRED_EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
 #[map]
 pub static CRED_STATS: PerCpuArray<u64> = PerCpuArray::with_max_entries(16, 0);
 
+// --- Process deny-set maps ---
+
+/// Per-process deny-set membership (pid → deny_set_id).
+#[map]
+pub static PROC_DENY_SETS: HashMap<u32, u32> = HashMap::with_max_entries(8192, 0);
+
+/// Deny-set policy: (deny_set_id, inode, dev) → blocked.
+#[map]
+pub static DENY_SET_POLICY: HashMap<DenySetKey, u8> = HashMap::with_max_entries(16384, 0);
+
+/// Deny-set transitions: (deny_set_id, inode, dev) → new deny_set_id.
+#[map]
+pub static DENY_SET_TRANSITIONS: HashMap<DenySetKey, u32> = HashMap::with_max_entries(4096, 0);
+
+// --- Bind maps ---
+
+/// Allowed bind ports (port + protocol).
+#[map]
+pub static ALLOWED_BINDS: HashMap<BindKey, u8> = HashMap::with_max_entries(256, 0);
+
+/// Ring buffer for bind enforcement events.
+#[map]
+pub static BIND_EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
+
+// --- Reverse shell detection ---
+
+/// Mode flag for reverse shell detection (index 0: 0=disabled, 1=enabled).
+#[map]
+pub static REVERSE_SHELL_MODE: Array<u8> = Array::with_max_entries(1, 0);
+
+/// Ring buffer for reverse shell detection events.
+#[map]
+pub static REVERSE_SHELL_EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
+
+// --- Memfd blocking ---
+
+/// Ring buffer for memfd blocking events.
+#[map]
+pub static MEMFD_EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
+
 // --- Per-cgroup statistics ---
 
 /// Per-cgroup enforcement statistics (per-CPU hash map keyed by cgroup_id).
@@ -143,6 +183,10 @@ pub const CGROUP_STAT_PROC_ALLOWED: usize = 4;
 pub const CGROUP_STAT_PROC_BLOCKED: usize = 5;
 pub const CGROUP_STAT_CRED_ALLOWED: usize = 6;
 pub const CGROUP_STAT_CRED_BLOCKED: usize = 7;
+pub const CGROUP_STAT_BIND_ALLOWED: usize = 8;
+pub const CGROUP_STAT_BIND_BLOCKED: usize = 9;
+pub const CGROUP_STAT_DENYSET_ALLOWED: usize = 10;
+pub const CGROUP_STAT_DENYSET_BLOCKED: usize = 11;
 
 /// Increment a specific counter in the per-cgroup stats map for the given cgroup_id.
 ///
@@ -167,6 +211,10 @@ pub fn bump_cgroup_stat(cgroup_id: u64, field_offset: usize) {
                 process_blocked: 0,
                 credential_allowed: 0,
                 credential_blocked: 0,
+                bind_allowed: 0,
+                bind_blocked: 0,
+                denyset_allowed: 0,
+                denyset_blocked: 0,
             };
             let base = &mut stats as *mut CgroupStats as *mut u8;
             let counter = base.add(field_offset * 8) as *mut u64;
