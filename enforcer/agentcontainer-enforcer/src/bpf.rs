@@ -18,8 +18,9 @@ use tracing::warn;
 
 use crate::events::{ContainerRegistry, EventBus};
 use crate::policy::{
-    ContainerHandle, CredentialPolicy, EnforcementEvent, EnforcementStats, FilesystemPolicy,
-    NetworkPolicy, PolicyManager, ProcessPolicy,
+    BindPolicy, ContainerHandle, CredentialPolicy, DenySetPolicy, EnforcementEvent,
+    EnforcementStats, FilesystemPolicy, NetworkPolicy, PolicyManager, ProcessPolicy,
+    ResolvedDenySetEntry, ReverseShellConfig,
 };
 
 // ===========================================================================
@@ -32,8 +33,8 @@ mod linux {
     use crate::events::{parse_cred_event, parse_exec_event, parse_fs_event, parse_network_event};
     use agentcontainer_common::events as bpf_events;
     use agentcontainer_common::maps::{
-        CgroupStats, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue, FS_PERM_READ,
-        FS_PERM_WRITE,
+        BindKey, CgroupStats, DenySetKey, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
+        FS_PERM_READ, FS_PERM_WRITE,
     };
     use aya::maps::lpm_trie::Key as LpmKey;
     use aya::maps::{HashMap as AyaHashMap, LpmTrie, PerCpuHashMap, RingBuf};
@@ -680,6 +681,173 @@ mod linux {
             Ok(())
         }
 
+        async fn apply_deny_set(
+            &self,
+            container_id: &str,
+            policy: &DenySetPolicy,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                entries = policy.entries.len(),
+                transitions = policy.transitions.len(),
+                init_pid = policy.init_pid,
+                init_deny_set_id = policy.init_deny_set_id,
+                "applying deny-set policy to BPF maps"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+
+            // Insert allowed entries into DENY_SET_POLICY map.
+            {
+                let map_data = bpf
+                    .map_mut("DENY_SET_POLICY")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_POLICY not found"))?;
+                let mut map: AyaHashMap<_, DenySetKey, u8> = AyaHashMap::try_from(map_data)?;
+                for entry in &policy.entries {
+                    let key = DenySetKey {
+                        deny_set_id: entry.deny_set_id,
+                        _pad: 0,
+                        inode: entry.inode,
+                        dev_major: entry.dev_major,
+                        dev_minor: entry.dev_minor,
+                    };
+                    map.insert(key, 1u8, 0)?;
+                    info!(
+                        deny_set_id = entry.deny_set_id,
+                        inode = entry.inode,
+                        "added entry to DENY_SET_POLICY"
+                    );
+                }
+            }
+
+            // Insert transitions into DENY_SET_TRANSITIONS map.
+            {
+                let map_data = bpf
+                    .map_mut("DENY_SET_TRANSITIONS")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_TRANSITIONS not found"))?;
+                let mut map: AyaHashMap<_, DenySetKey, u32> = AyaHashMap::try_from(map_data)?;
+                for t in &policy.transitions {
+                    let key = DenySetKey {
+                        deny_set_id: t.parent_deny_set_id,
+                        _pad: 0,
+                        inode: t.child_inode,
+                        dev_major: t.child_dev_major,
+                        dev_minor: t.child_dev_minor,
+                    };
+                    map.insert(key, t.child_deny_set_id, 0)?;
+                    info!(
+                        parent_deny_set_id = t.parent_deny_set_id,
+                        child_deny_set_id = t.child_deny_set_id,
+                        "added transition to DENY_SET_TRANSITIONS"
+                    );
+                }
+            }
+
+            // Insert init PID -> deny_set_id into PROC_DENY_SETS map.
+            {
+                let map_data = bpf
+                    .map_mut("PROC_DENY_SETS")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map PROC_DENY_SETS not found"))?;
+                let mut map: AyaHashMap<_, u32, u32> = AyaHashMap::try_from(map_data)?;
+                map.insert(policy.init_pid, policy.init_deny_set_id, 0)?;
+                info!(
+                    init_pid = policy.init_pid,
+                    init_deny_set_id = policy.init_deny_set_id,
+                    "added init PID to PROC_DENY_SETS"
+                );
+            }
+
+            Ok(())
+        }
+
+        async fn update_deny_set(
+            &self,
+            container_id: &str,
+            entry: &ResolvedDenySetEntry,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                deny_set_id = entry.deny_set_id,
+                inode = entry.inode,
+                "updating single deny-set entry in BPF map"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("DENY_SET_POLICY")
+                .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_POLICY not found"))?;
+            let mut map: AyaHashMap<_, DenySetKey, u8> = AyaHashMap::try_from(map_data)?;
+            let key = DenySetKey {
+                deny_set_id: entry.deny_set_id,
+                _pad: 0,
+                inode: entry.inode,
+                dev_major: entry.dev_major,
+                dev_minor: entry.dev_minor,
+            };
+            map.insert(key, 1u8, 0)?;
+
+            Ok(())
+        }
+
+        async fn apply_bind(
+            &self,
+            container_id: &str,
+            policy: &BindPolicy,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                rules = policy.rules.len(),
+                "applying bind policy to BPF maps"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("ALLOWED_BINDS")
+                .ok_or_else(|| anyhow::anyhow!("BPF map ALLOWED_BINDS not found"))?;
+            let mut map: AyaHashMap<_, BindKey, u8> = AyaHashMap::try_from(map_data)?;
+
+            for rule in &policy.rules {
+                let key = BindKey {
+                    port: rule.port,
+                    protocol: rule.protocol,
+                    _pad: 0,
+                };
+                map.insert(key, 1u8, 0)?;
+                info!(
+                    port = rule.port,
+                    protocol = rule.protocol,
+                    "added bind rule to ALLOWED_BINDS"
+                );
+            }
+
+            Ok(())
+        }
+
+        async fn configure_reverse_shell(
+            &self,
+            container_id: &str,
+            config: &ReverseShellConfig,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                mode = config.mode,
+                "configuring reverse shell detection in BPF"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("REVERSE_SHELL_MODE")
+                .ok_or_else(|| anyhow::anyhow!("BPF map REVERSE_SHELL_MODE not found"))?;
+            let mut map: aya::maps::Array<_, u8> = aya::maps::Array::try_from(map_data)?;
+            map.set(0, config.mode, 0)?;
+
+            Ok(())
+        }
+
         async fn get_stats(&self, container_id: &str) -> anyhow::Result<EnforcementStats> {
             let cgroup_id = self.lookup_cgroup(container_id)?;
 
@@ -866,6 +1034,59 @@ mod stub {
                 container_id,
                 acls = policy.secret_acls.len(),
                 "stub: apply_credential is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn apply_deny_set(
+            &self,
+            container_id: &str,
+            policy: &DenySetPolicy,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                entries = policy.entries.len(),
+                transitions = policy.transitions.len(),
+                "stub: apply_deny_set is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn update_deny_set(
+            &self,
+            container_id: &str,
+            entry: &ResolvedDenySetEntry,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                deny_set_id = entry.deny_set_id,
+                "stub: update_deny_set is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn apply_bind(
+            &self,
+            container_id: &str,
+            policy: &BindPolicy,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                rules = policy.rules.len(),
+                "stub: apply_bind is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn configure_reverse_shell(
+            &self,
+            container_id: &str,
+            config: &ReverseShellConfig,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                mode = config.mode,
+                "stub: configure_reverse_shell is a no-op"
             );
             Ok(())
         }
