@@ -170,7 +170,7 @@ When you run `ac verify`, the policy's `maxAge` is checked:
 ```bash
 ac verify
 # If org policy was locked more than 7d ago (maxAge: "7d"), verification fails
-# Re-run "ac lock" to refresh the policy
+# Re-run "agentcontainer lock" to refresh the policy
 ```
 
 This ensures teams cannot run with stale policies indefinitely.
