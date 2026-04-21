@@ -31,8 +31,8 @@ use crate::policy::{
 mod linux {
     use super::*;
     use crate::events::{
-        parse_bind_event, parse_cred_event, parse_exec_event, parse_fs_event,
-        parse_memfd_event, parse_network_event, parse_reverse_shell_event, MemfdEvent,
+        parse_bind_event, parse_cred_event, parse_exec_event, parse_fs_event, parse_memfd_event,
+        parse_network_event, parse_reverse_shell_event, MemfdEvent,
     };
     use agentcontainer_common::events as bpf_events;
     use agentcontainer_common::maps::{
@@ -186,9 +186,7 @@ mod linux {
                     tp.load()?;
                     match tp.attach("syscalls", "sys_enter_memfd_create") {
                         Ok(_link) => {
-                            info!(
-                                "attached ac_memfd_create to syscalls/sys_enter_memfd_create"
-                            )
+                            info!("attached ac_memfd_create to syscalls/sys_enter_memfd_create")
                         }
                         Err(e) => warn!(
                             error = %e,
@@ -933,11 +931,7 @@ mod linux {
             Ok(())
         }
 
-        async fn apply_bind(
-            &self,
-            container_id: &str,
-            policy: &BindPolicy,
-        ) -> anyhow::Result<()> {
+        async fn apply_bind(&self, container_id: &str, policy: &BindPolicy) -> anyhow::Result<()> {
             let _cgroup_id = self.lookup_cgroup(container_id)?;
             info!(
                 container_id,
@@ -1207,11 +1201,7 @@ mod stub {
             Ok(())
         }
 
-        async fn apply_bind(
-            &self,
-            container_id: &str,
-            policy: &BindPolicy,
-        ) -> anyhow::Result<()> {
+        async fn apply_bind(&self, container_id: &str, policy: &BindPolicy) -> anyhow::Result<()> {
             warn!(
                 container_id,
                 rules = policy.rules.len(),

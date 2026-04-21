@@ -1160,7 +1160,10 @@ impl Enforcer for EnforcerService {
             other => {
                 return Ok(Response::new(PolicyResponse {
                     success: false,
-                    error: format!("unknown mode {:?}: expected \"enforce\", \"log\", or \"off\"", other),
+                    error: format!(
+                        "unknown mode {:?}: expected \"enforce\", \"log\", or \"off\"",
+                        other
+                    ),
                 }));
             }
         };
