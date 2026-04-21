@@ -49,9 +49,9 @@ func TestExecFlagParsing(t *testing.T) {
 	}
 }
 
-func TestExecRequiresConfig(t *testing.T) {
-	// When no config file exists, exec should fail because the approval
-	// broker cannot determine what commands are allowed.
+func TestExecNoConfig_DefaultDeny(t *testing.T) {
+	// When no config file exists, exec proceeds with default-deny approval.
+	// The broker denies all commands because there are no declared capabilities.
 	tmp := t.TempDir()
 	origDir, _ := os.Getwd()
 	if err := os.Chdir(tmp); err != nil {
@@ -64,10 +64,10 @@ func TestExecRequiresConfig(t *testing.T) {
 
 	err := cmd.Execute()
 	if err == nil {
-		t.Fatal("expected error when no config file exists")
+		t.Fatal("expected error from default-deny broker")
 	}
-	if !strings.Contains(err.Error(), "no agentcontainer.json") {
-		t.Errorf("expected config-not-found error, got: %v", err)
+	if !strings.Contains(err.Error(), "denied") {
+		t.Errorf("expected denial error, got: %v", err)
 	}
 }
 
