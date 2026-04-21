@@ -56,6 +56,9 @@ pub enum EventDomain {
     Filesystem,
     Process,
     Credential,
+    Bind,
+    ReverseShell,
+    Memfd,
 }
 
 impl EventDomain {
@@ -65,6 +68,9 @@ impl EventDomain {
             Self::Filesystem => "filesystem",
             Self::Process => "process",
             Self::Credential => "credential",
+            Self::Bind => "bind",
+            Self::ReverseShell => "reverse_shell",
+            Self::Memfd => "memfd",
         }
     }
 }

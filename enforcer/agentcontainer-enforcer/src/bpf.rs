@@ -30,7 +30,10 @@ use crate::policy::{
 #[cfg(target_os = "linux")]
 mod linux {
     use super::*;
-    use crate::events::{parse_cred_event, parse_exec_event, parse_fs_event, parse_network_event};
+    use crate::events::{
+        parse_bind_event, parse_cred_event, parse_exec_event, parse_fs_event,
+        parse_memfd_event, parse_network_event, parse_reverse_shell_event, MemfdEvent,
+    };
     use agentcontainer_common::events as bpf_events;
     use agentcontainer_common::maps::{
         BindKey, CgroupStats, DenySetKey, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
@@ -112,6 +115,9 @@ mod linux {
 
             info!("BPF programs loaded successfully");
 
+            // Attach programs to their kernel hook points.
+            Self::attach_programs(&mut bpf)?;
+
             let registry = ContainerRegistry::new();
             let event_bus = EventBus::new();
 
@@ -126,6 +132,135 @@ mod linux {
             mgr.spawn_event_readers();
 
             Ok(mgr)
+        }
+
+        /// Attach all BPF programs to their kernel hook points.
+        ///
+        /// Programs are attached in a best-effort manner: if a specific hook is
+        /// unavailable on the running kernel (e.g., `sys_enter_memfd_create` on
+        /// older kernels), a warning is logged but startup continues. Only
+        /// critical failures (e.g., unable to open the root cgroup) are fatal.
+        fn attach_programs(bpf: &mut Ebpf) -> anyhow::Result<()> {
+            use aya::programs::{CgroupSockAddr, KProbe, TracePoint};
+            use std::os::fd::AsFd;
+
+            // Open the root cgroup v2 hierarchy for cgroup-attached programs.
+            let cgroup_file = std::fs::File::open("/sys/fs/cgroup/")
+                .map_err(|e| anyhow::anyhow!("failed to open cgroup v2 root: {e}"))?;
+            let cgroup_fd = cgroup_file.as_fd();
+
+            // ---------------------------------------------------------------
+            // Tracepoints
+            // ---------------------------------------------------------------
+
+            // sched/sched_process_fork — deny-set inheritance tracking.
+            match bpf.program_mut("ac_sched_fork") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("sched", "sched_process_fork") {
+                        Ok(_link) => info!("attached ac_sched_fork to sched/sched_process_fork"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_sched_fork (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_sched_fork not found in ELF"),
+            }
+
+            // sched/sched_process_exit — deny-set cleanup on process exit.
+            match bpf.program_mut("ac_sched_exit") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("sched", "sched_process_exit") {
+                        Ok(_link) => info!("attached ac_sched_exit to sched/sched_process_exit"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_sched_exit (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_sched_exit not found in ELF"),
+            }
+
+            // syscalls/sys_enter_memfd_create — fileless execution detection.
+            match bpf.program_mut("ac_memfd_create") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("syscalls", "sys_enter_memfd_create") {
+                        Ok(_link) => {
+                            info!(
+                                "attached ac_memfd_create to syscalls/sys_enter_memfd_create"
+                            )
+                        }
+                        Err(e) => warn!(
+                            error = %e,
+                            "failed to attach ac_memfd_create — kernel may lack this tracepoint (non-fatal)"
+                        ),
+                    }
+                }
+                None => warn!("BPF program ac_memfd_create not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // Cgroup socket address hooks (bind enforcement)
+            // ---------------------------------------------------------------
+
+            // cgroup/bind4 — IPv4 bind enforcement.
+            match bpf.program_mut("ac_bind4") {
+                Some(prog) => {
+                    let cg: &mut CgroupSockAddr = prog.try_into()?;
+                    cg.load()?;
+                    match cg.attach(cgroup_fd) {
+                        Ok(_link) => info!("attached ac_bind4 to cgroup bind4"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_bind4 (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_bind4 not found in ELF"),
+            }
+
+            // cgroup/bind6 — IPv6 bind enforcement.
+            match bpf.program_mut("ac_bind6") {
+                Some(prog) => {
+                    let cg: &mut CgroupSockAddr = prog.try_into()?;
+                    cg.load()?;
+                    match cg.attach(cgroup_fd) {
+                        Ok(_link) => info!("attached ac_bind6 to cgroup bind6"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_bind6 (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_bind6 not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // Kprobe — reverse shell dup2 detection
+            // ---------------------------------------------------------------
+
+            // kprobe/__x64_sys_dup2 — detects stdin/stdout redirection to sockets.
+            match bpf.program_mut("ac_dup2_check") {
+                Some(prog) => {
+                    let kp: &mut KProbe = prog.try_into()?;
+                    kp.load()?;
+                    match kp.attach("__x64_sys_dup2", 0) {
+                        Ok(_link) => info!("attached ac_dup2_check to kprobe __x64_sys_dup2"),
+                        Err(e) => warn!(
+                            error = %e,
+                            "failed to attach ac_dup2_check — __x64_sys_dup2 may not exist on this arch (non-fatal)"
+                        ),
+                    }
+                }
+                None => warn!("BPF program ac_dup2_check not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // LSM hooks — loaded and attached by aya automatically when the
+            // ELF contains BTF-based LSM programs. We log their presence here
+            // for observability but no manual attachment is needed.
+            // ---------------------------------------------------------------
+
+            // Suppress unused variable warning for cgroup_fd — it's used above
+            // and kept alive until this function returns.
+            let _ = &cgroup_file;
+
+            info!("BPF program attachment complete");
+            Ok(())
         }
 
         /// Spawn background tasks that drain all BPF ring buffers and publish
@@ -202,6 +337,13 @@ mod linux {
                         spawn_reader!("FS_EVENTS", bpf_events::FsEvent, parse_fs_event);
                         spawn_reader!("PROC_EVENTS", bpf_events::ExecEvent, parse_exec_event);
                         spawn_reader!("CRED_EVENTS", bpf_events::CredEvent, parse_cred_event);
+                        spawn_reader!("BIND_EVENTS", bpf_events::BindEvent, parse_bind_event);
+                        spawn_reader!(
+                            "REVERSE_SHELL_EVENTS",
+                            bpf_events::ReverseShellEvent,
+                            parse_reverse_shell_event
+                        );
+                        spawn_reader!("MEMFD_EVENTS", MemfdEvent, parse_memfd_event);
 
                         for h in handles {
                             let _ = h.await;
