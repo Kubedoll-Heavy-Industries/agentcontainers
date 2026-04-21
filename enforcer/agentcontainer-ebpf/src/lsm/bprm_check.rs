@@ -15,12 +15,16 @@ use aya_ebpf::helpers::{
 use aya_ebpf::macros::lsm;
 use aya_ebpf::programs::LsmContext;
 
-use agentcontainer_common::events::{ExecEvent, STAT_PROC_ALLOWED, STAT_PROC_BLOCKED};
-use agentcontainer_common::maps::{FsInodeKey, LSM_ALLOW, LSM_DENY};
+use agentcontainer_common::events::{
+    DenySetEvent, ExecEvent, STAT_DENYSET_ALLOWED, STAT_DENYSET_BLOCKED, STAT_PROC_ALLOWED,
+    STAT_PROC_BLOCKED,
+};
+use agentcontainer_common::maps::{DenySetKey, FsInodeKey, LSM_ALLOW, LSM_DENY};
 
 use crate::maps::{
-    bump_cgroup_stat, ALLOWED_EXECS, CGROUP_STAT_PROC_ALLOWED, CGROUP_STAT_PROC_BLOCKED,
-    ENFORCED_CGROUPS, PROC_EVENTS, PROC_STATS,
+    bump_cgroup_stat, ALLOWED_EXECS, CGROUP_STAT_DENYSET_ALLOWED, CGROUP_STAT_DENYSET_BLOCKED,
+    CGROUP_STAT_PROC_ALLOWED, CGROUP_STAT_PROC_BLOCKED, DENY_SET_POLICY, DENY_SET_TRANSITIONS,
+    ENFORCED_CGROUPS, PROC_DENY_SETS, PROC_EVENTS, PROC_STATS,
 };
 
 // ---------------------------------------------------------------------------
@@ -116,6 +120,46 @@ fn emit_exec_block_event(ino: u64) {
     }
 }
 
+/// Emit a block event for a deny-set policy violation to the PROC_EVENTS ring buffer.
+#[inline(always)]
+fn emit_denyset_block_event(deny_set_id: u32, child_ino: u64) {
+    if let Some(mut entry) = PROC_EVENTS.reserve::<DenySetEvent>(0) {
+        let ev = entry.as_mut_ptr();
+        unsafe {
+            (*ev).timestamp_ns = bpf_ktime_get_ns();
+
+            let pid_tgid = bpf_get_current_pid_tgid();
+            (*ev).pid = (pid_tgid >> 32) as u32;
+
+            let uid_gid = bpf_get_current_uid_gid();
+            (*ev).uid = uid_gid as u32;
+
+            (*ev).event_type = 6; // EventType::DenySetViolation
+            (*ev).verdict = 1; // Verdict::Block
+
+            (*ev).deny_set_id = deny_set_id;
+            (*ev).parent_inode = 0; // Not available in bprm_check context.
+            (*ev).child_inode = child_ino;
+
+            (*ev).comm = match bpf_get_current_comm() {
+                Ok(c) => c,
+                Err(_) => [0u8; 16],
+            };
+        }
+        entry.submit(0);
+    }
+}
+
+/// Bump a per-CPU deny-set stats counter by index.
+#[inline(always)]
+fn bump_denyset_stat(idx: u32) {
+    unsafe {
+        if let Some(val) = PROC_STATS.get_ptr_mut(idx) {
+            *val += 1;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // lsm/bprm_check_security -- intercepts process execution (execve).
 // ---------------------------------------------------------------------------
@@ -195,15 +239,53 @@ fn try_bprm_check(ctx: &LsmContext) -> Result<i32, i64> {
     };
 
     // 1. Check allowed executables map.
-    if unsafe { ALLOWED_EXECS.get(&key) }.is_some() {
-        bump_stat(STAT_PROC_ALLOWED);
-        bump_cgroup_stat(cgroup_id, CGROUP_STAT_PROC_ALLOWED);
-        return Ok(LSM_ALLOW);
+    if unsafe { ALLOWED_EXECS.get(&key) }.is_none() {
+        // Not in allowlist -- block execution, emit audit event.
+        bump_stat(STAT_PROC_BLOCKED);
+        bump_cgroup_stat(cgroup_id, CGROUP_STAT_PROC_BLOCKED);
+        emit_exec_block_event(ino);
+        return Ok(LSM_DENY);
     }
 
-    // 2. Default deny -- block execution, emit audit event.
-    bump_stat(STAT_PROC_BLOCKED);
-    bump_cgroup_stat(cgroup_id, CGROUP_STAT_PROC_BLOCKED);
-    emit_exec_block_event(ino);
-    Ok(LSM_DENY)
+    // Inode is in the global allowlist. Now check deny-set policy.
+    bump_stat(STAT_PROC_ALLOWED);
+    bump_cgroup_stat(cgroup_id, CGROUP_STAT_PROC_ALLOWED);
+
+    // 2. Check deny-set policy: look up current PID in PROC_DENY_SETS.
+    //    If the process is not under process-tree enforcement, skip.
+    let pid = (unsafe { bpf_get_current_pid_tgid() } >> 32) as u32;
+    if let Some(deny_set_id_ptr) = unsafe { PROC_DENY_SETS.get(&pid) } {
+        let deny_set_id = *deny_set_id_ptr;
+
+        // Build deny-set lookup key: (deny_set_id, inode, dev).
+        let ds_key = DenySetKey {
+            deny_set_id,
+            _pad: 0,
+            inode: ino,
+            dev_major: key.dev_major,
+            dev_minor: key.dev_minor,
+        };
+
+        // 3. Check if this (deny_set_id, inode, dev) is in the deny-set policy.
+        //    Presence in DENY_SET_POLICY means the exec is allowed for this deny-set.
+        if unsafe { DENY_SET_POLICY.get(&ds_key) }.is_none() {
+            // Not in deny-set policy -- block.
+            bump_denyset_stat(STAT_DENYSET_BLOCKED);
+            bump_cgroup_stat(cgroup_id, CGROUP_STAT_DENYSET_BLOCKED);
+            emit_denyset_block_event(deny_set_id, ino);
+            return Ok(LSM_DENY);
+        }
+
+        // Allowed by deny-set policy. Check for deny-set transition.
+        bump_denyset_stat(STAT_DENYSET_ALLOWED);
+        bump_cgroup_stat(cgroup_id, CGROUP_STAT_DENYSET_ALLOWED);
+
+        // 4. If a transition exists, update the PID's deny_set_id.
+        if let Some(new_id_ptr) = unsafe { DENY_SET_TRANSITIONS.get(&ds_key) } {
+            let new_id = *new_id_ptr;
+            let _ = PROC_DENY_SETS.insert(&pid, &new_id, 0);
+        }
+    }
+
+    Ok(LSM_ALLOW)
 }
