@@ -3,7 +3,16 @@
 version = 4
 
 [[package]]
-name = "ac-common"
+name = "addr2line"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9698bf0769c641b18618039fe2ebd41eb3541f98433000f64e663fab7cea2c87"
+dependencies = [
+ "gimli",
+]
+
+[[package]]
+name = "agentcontainer-common"
 version = "0.1.0"
 dependencies = [
  "aya",
@@ -13,20 +22,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "ac-ebpf"
+name = "agentcontainer-ebpf"
 version = "0.1.0"
 dependencies = [
- "ac-common",
+ "agentcontainer-common",
  "aya-ebpf",
  "aya-log-ebpf",
  "siphasher",
 ]
 
 [[package]]
-name = "ac-enforcer"
+name = "agentcontainer-enforcer"
 version = "0.1.0"
 dependencies = [
- "ac-common",
+ "agentcontainer-common",
  "anyhow",
  "aya",
  "aya-build",
@@ -58,15 +67,6 @@ dependencies = [
  "tracing-subscriber",
  "wasmtime",
  "wasmtime-wasi",
-]
-
-[[package]]
-name = "addr2line"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9698bf0769c641b18618039fe2ebd41eb3541f98433000f64e663fab7cea2c87"
-dependencies = [
- "gimli",
 ]
 
 [[package]]

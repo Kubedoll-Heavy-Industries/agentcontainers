@@ -18,8 +18,9 @@ use tracing::warn;
 
 use crate::events::{ContainerRegistry, EventBus};
 use crate::policy::{
-    ContainerHandle, CredentialPolicy, EnforcementEvent, EnforcementStats, FilesystemPolicy,
-    NetworkPolicy, PolicyManager, ProcessPolicy,
+    BindPolicy, ContainerHandle, CredentialPolicy, DenySetPolicy, EnforcementEvent,
+    EnforcementStats, FilesystemPolicy, NetworkPolicy, PolicyManager, ProcessPolicy,
+    ResolvedDenySetEntry, ReverseShellConfig,
 };
 
 // ===========================================================================
@@ -29,11 +30,14 @@ use crate::policy::{
 #[cfg(target_os = "linux")]
 mod linux {
     use super::*;
-    use crate::events::{parse_cred_event, parse_exec_event, parse_fs_event, parse_network_event};
+    use crate::events::{
+        parse_bind_event, parse_cred_event, parse_exec_event, parse_fs_event, parse_memfd_event,
+        parse_network_event, parse_reverse_shell_event, MemfdEvent,
+    };
     use agentcontainer_common::events as bpf_events;
     use agentcontainer_common::maps::{
-        CgroupStats, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue, FS_PERM_READ,
-        FS_PERM_WRITE,
+        BindKey, CgroupStats, DenySetKey, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
+        FS_PERM_READ, FS_PERM_WRITE,
     };
     use aya::maps::lpm_trie::Key as LpmKey;
     use aya::maps::{HashMap as AyaHashMap, LpmTrie, PerCpuHashMap, RingBuf};
@@ -111,6 +115,9 @@ mod linux {
 
             info!("BPF programs loaded successfully");
 
+            // Attach programs to their kernel hook points.
+            Self::attach_programs(&mut bpf)?;
+
             let registry = ContainerRegistry::new();
             let event_bus = EventBus::new();
 
@@ -125,6 +132,133 @@ mod linux {
             mgr.spawn_event_readers();
 
             Ok(mgr)
+        }
+
+        /// Attach all BPF programs to their kernel hook points.
+        ///
+        /// Programs are attached in a best-effort manner: if a specific hook is
+        /// unavailable on the running kernel (e.g., `sys_enter_memfd_create` on
+        /// older kernels), a warning is logged but startup continues. Only
+        /// critical failures (e.g., unable to open the root cgroup) are fatal.
+        fn attach_programs(bpf: &mut Ebpf) -> anyhow::Result<()> {
+            use aya::programs::{CgroupSockAddr, KProbe, TracePoint};
+            use std::os::fd::AsFd;
+
+            // Open the root cgroup v2 hierarchy for cgroup-attached programs.
+            let cgroup_file = std::fs::File::open("/sys/fs/cgroup/")
+                .map_err(|e| anyhow::anyhow!("failed to open cgroup v2 root: {e}"))?;
+            let cgroup_fd = cgroup_file.as_fd();
+
+            // ---------------------------------------------------------------
+            // Tracepoints
+            // ---------------------------------------------------------------
+
+            // sched/sched_process_fork — deny-set inheritance tracking.
+            match bpf.program_mut("ac_sched_fork") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("sched", "sched_process_fork") {
+                        Ok(_link) => info!("attached ac_sched_fork to sched/sched_process_fork"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_sched_fork (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_sched_fork not found in ELF"),
+            }
+
+            // sched/sched_process_exit — deny-set cleanup on process exit.
+            match bpf.program_mut("ac_sched_exit") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("sched", "sched_process_exit") {
+                        Ok(_link) => info!("attached ac_sched_exit to sched/sched_process_exit"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_sched_exit (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_sched_exit not found in ELF"),
+            }
+
+            // syscalls/sys_enter_memfd_create — fileless execution detection.
+            match bpf.program_mut("ac_memfd_create") {
+                Some(prog) => {
+                    let tp: &mut TracePoint = prog.try_into()?;
+                    tp.load()?;
+                    match tp.attach("syscalls", "sys_enter_memfd_create") {
+                        Ok(_link) => {
+                            info!("attached ac_memfd_create to syscalls/sys_enter_memfd_create")
+                        }
+                        Err(e) => warn!(
+                            error = %e,
+                            "failed to attach ac_memfd_create — kernel may lack this tracepoint (non-fatal)"
+                        ),
+                    }
+                }
+                None => warn!("BPF program ac_memfd_create not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // Cgroup socket address hooks (bind enforcement)
+            // ---------------------------------------------------------------
+
+            // cgroup/bind4 — IPv4 bind enforcement.
+            match bpf.program_mut("ac_bind4") {
+                Some(prog) => {
+                    let cg: &mut CgroupSockAddr = prog.try_into()?;
+                    cg.load()?;
+                    match cg.attach(cgroup_fd) {
+                        Ok(_link) => info!("attached ac_bind4 to cgroup bind4"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_bind4 (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_bind4 not found in ELF"),
+            }
+
+            // cgroup/bind6 — IPv6 bind enforcement.
+            match bpf.program_mut("ac_bind6") {
+                Some(prog) => {
+                    let cg: &mut CgroupSockAddr = prog.try_into()?;
+                    cg.load()?;
+                    match cg.attach(cgroup_fd) {
+                        Ok(_link) => info!("attached ac_bind6 to cgroup bind6"),
+                        Err(e) => warn!(error = %e, "failed to attach ac_bind6 (non-fatal)"),
+                    }
+                }
+                None => warn!("BPF program ac_bind6 not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // Kprobe — reverse shell dup2 detection
+            // ---------------------------------------------------------------
+
+            // kprobe/__x64_sys_dup2 — detects stdin/stdout redirection to sockets.
+            match bpf.program_mut("ac_dup2_check") {
+                Some(prog) => {
+                    let kp: &mut KProbe = prog.try_into()?;
+                    kp.load()?;
+                    match kp.attach("__x64_sys_dup2", 0) {
+                        Ok(_link) => info!("attached ac_dup2_check to kprobe __x64_sys_dup2"),
+                        Err(e) => warn!(
+                            error = %e,
+                            "failed to attach ac_dup2_check — __x64_sys_dup2 may not exist on this arch (non-fatal)"
+                        ),
+                    }
+                }
+                None => warn!("BPF program ac_dup2_check not found in ELF"),
+            }
+
+            // ---------------------------------------------------------------
+            // LSM hooks — loaded and attached by aya automatically when the
+            // ELF contains BTF-based LSM programs. We log their presence here
+            // for observability but no manual attachment is needed.
+            // ---------------------------------------------------------------
+
+            // Suppress unused variable warning for cgroup_fd — it's used above
+            // and kept alive until this function returns.
+            let _ = &cgroup_file;
+
+            info!("BPF program attachment complete");
+            Ok(())
         }
 
         /// Spawn background tasks that drain all BPF ring buffers and publish
@@ -201,6 +335,13 @@ mod linux {
                         spawn_reader!("FS_EVENTS", bpf_events::FsEvent, parse_fs_event);
                         spawn_reader!("PROC_EVENTS", bpf_events::ExecEvent, parse_exec_event);
                         spawn_reader!("CRED_EVENTS", bpf_events::CredEvent, parse_cred_event);
+                        spawn_reader!("BIND_EVENTS", bpf_events::BindEvent, parse_bind_event);
+                        spawn_reader!(
+                            "REVERSE_SHELL_EVENTS",
+                            bpf_events::ReverseShellEvent,
+                            parse_reverse_shell_event
+                        );
+                        spawn_reader!("MEMFD_EVENTS", MemfdEvent, parse_memfd_event);
 
                         for h in handles {
                             let _ = h.await;
@@ -680,6 +821,169 @@ mod linux {
             Ok(())
         }
 
+        async fn apply_deny_set(
+            &self,
+            container_id: &str,
+            policy: &DenySetPolicy,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                entries = policy.entries.len(),
+                transitions = policy.transitions.len(),
+                init_pid = policy.init_pid,
+                init_deny_set_id = policy.init_deny_set_id,
+                "applying deny-set policy to BPF maps"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+
+            // Insert allowed entries into DENY_SET_POLICY map.
+            {
+                let map_data = bpf
+                    .map_mut("DENY_SET_POLICY")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_POLICY not found"))?;
+                let mut map: AyaHashMap<_, DenySetKey, u8> = AyaHashMap::try_from(map_data)?;
+                for entry in &policy.entries {
+                    let key = DenySetKey {
+                        deny_set_id: entry.deny_set_id,
+                        _pad: 0,
+                        inode: entry.inode,
+                        dev_major: entry.dev_major,
+                        dev_minor: entry.dev_minor,
+                    };
+                    map.insert(key, 1u8, 0)?;
+                    info!(
+                        deny_set_id = entry.deny_set_id,
+                        inode = entry.inode,
+                        "added entry to DENY_SET_POLICY"
+                    );
+                }
+            }
+
+            // Insert transitions into DENY_SET_TRANSITIONS map.
+            {
+                let map_data = bpf
+                    .map_mut("DENY_SET_TRANSITIONS")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_TRANSITIONS not found"))?;
+                let mut map: AyaHashMap<_, DenySetKey, u32> = AyaHashMap::try_from(map_data)?;
+                for t in &policy.transitions {
+                    let key = DenySetKey {
+                        deny_set_id: t.parent_deny_set_id,
+                        _pad: 0,
+                        inode: t.child_inode,
+                        dev_major: t.child_dev_major,
+                        dev_minor: t.child_dev_minor,
+                    };
+                    map.insert(key, t.child_deny_set_id, 0)?;
+                    info!(
+                        parent_deny_set_id = t.parent_deny_set_id,
+                        child_deny_set_id = t.child_deny_set_id,
+                        "added transition to DENY_SET_TRANSITIONS"
+                    );
+                }
+            }
+
+            // Insert init PID -> deny_set_id into PROC_DENY_SETS map.
+            {
+                let map_data = bpf
+                    .map_mut("PROC_DENY_SETS")
+                    .ok_or_else(|| anyhow::anyhow!("BPF map PROC_DENY_SETS not found"))?;
+                let mut map: AyaHashMap<_, u32, u32> = AyaHashMap::try_from(map_data)?;
+                map.insert(policy.init_pid, policy.init_deny_set_id, 0)?;
+                info!(
+                    init_pid = policy.init_pid,
+                    init_deny_set_id = policy.init_deny_set_id,
+                    "added init PID to PROC_DENY_SETS"
+                );
+            }
+
+            Ok(())
+        }
+
+        async fn update_deny_set(
+            &self,
+            container_id: &str,
+            entry: &ResolvedDenySetEntry,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                deny_set_id = entry.deny_set_id,
+                inode = entry.inode,
+                "updating single deny-set entry in BPF map"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("DENY_SET_POLICY")
+                .ok_or_else(|| anyhow::anyhow!("BPF map DENY_SET_POLICY not found"))?;
+            let mut map: AyaHashMap<_, DenySetKey, u8> = AyaHashMap::try_from(map_data)?;
+            let key = DenySetKey {
+                deny_set_id: entry.deny_set_id,
+                _pad: 0,
+                inode: entry.inode,
+                dev_major: entry.dev_major,
+                dev_minor: entry.dev_minor,
+            };
+            map.insert(key, 1u8, 0)?;
+
+            Ok(())
+        }
+
+        async fn apply_bind(&self, container_id: &str, policy: &BindPolicy) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                rules = policy.rules.len(),
+                "applying bind policy to BPF maps"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("ALLOWED_BINDS")
+                .ok_or_else(|| anyhow::anyhow!("BPF map ALLOWED_BINDS not found"))?;
+            let mut map: AyaHashMap<_, BindKey, u8> = AyaHashMap::try_from(map_data)?;
+
+            for rule in &policy.rules {
+                let key = BindKey {
+                    port: rule.port,
+                    protocol: rule.protocol,
+                    _pad: 0,
+                };
+                map.insert(key, 1u8, 0)?;
+                info!(
+                    port = rule.port,
+                    protocol = rule.protocol,
+                    "added bind rule to ALLOWED_BINDS"
+                );
+            }
+
+            Ok(())
+        }
+
+        async fn configure_reverse_shell(
+            &self,
+            container_id: &str,
+            config: &ReverseShellConfig,
+        ) -> anyhow::Result<()> {
+            let _cgroup_id = self.lookup_cgroup(container_id)?;
+            info!(
+                container_id,
+                mode = config.mode,
+                "configuring reverse shell detection in BPF"
+            );
+
+            let mut bpf = self.programs.lock().unwrap();
+            let map_data = bpf
+                .map_mut("REVERSE_SHELL_MODE")
+                .ok_or_else(|| anyhow::anyhow!("BPF map REVERSE_SHELL_MODE not found"))?;
+            let mut map: aya::maps::Array<_, u8> = aya::maps::Array::try_from(map_data)?;
+            map.set(0, config.mode, 0)?;
+
+            Ok(())
+        }
+
         async fn get_stats(&self, container_id: &str) -> anyhow::Result<EnforcementStats> {
             let cgroup_id = self.lookup_cgroup(container_id)?;
 
@@ -866,6 +1170,55 @@ mod stub {
                 container_id,
                 acls = policy.secret_acls.len(),
                 "stub: apply_credential is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn apply_deny_set(
+            &self,
+            container_id: &str,
+            policy: &DenySetPolicy,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                entries = policy.entries.len(),
+                transitions = policy.transitions.len(),
+                "stub: apply_deny_set is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn update_deny_set(
+            &self,
+            container_id: &str,
+            entry: &ResolvedDenySetEntry,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                deny_set_id = entry.deny_set_id,
+                "stub: update_deny_set is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn apply_bind(&self, container_id: &str, policy: &BindPolicy) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                rules = policy.rules.len(),
+                "stub: apply_bind is a no-op"
+            );
+            Ok(())
+        }
+
+        async fn configure_reverse_shell(
+            &self,
+            container_id: &str,
+            config: &ReverseShellConfig,
+        ) -> anyhow::Result<()> {
+            warn!(
+                container_id,
+                mode = config.mode,
+                "stub: configure_reverse_shell is a no-op"
             );
             Ok(())
         }

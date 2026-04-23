@@ -43,6 +43,30 @@ pub struct FsInodeKey {
     pub dev_minor: u32,
 }
 
+// --- Process deny-set map keys ---
+
+/// Key for deny-set policy lookup: (deny_set_id, inode, dev).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DenySetKey {
+    pub deny_set_id: u32,
+    pub _pad: u32,
+    pub inode: u64,
+    pub dev_major: u32,
+    pub dev_minor: u32,
+}
+
+// --- Bind map keys ---
+
+/// Key for allowed bind ports.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BindKey {
+    pub port: u16,
+    pub protocol: u8,
+    pub _pad: u8,
+}
+
 // --- Credential map keys ---
 
 /// Key for credential/secret ACL enforcement.
@@ -87,6 +111,10 @@ pub struct CgroupStats {
     pub process_blocked: u64,
     pub credential_allowed: u64,
     pub credential_blocked: u64,
+    pub bind_allowed: u64,
+    pub bind_blocked: u64,
+    pub denyset_allowed: u64,
+    pub denyset_blocked: u64,
 }
 
 // --- Verdicts ---
@@ -117,4 +145,6 @@ mod pod_impls {
     unsafe impl aya::Pod for super::LpmKeyV4 {}
     unsafe impl aya::Pod for super::LpmKeyV6 {}
     unsafe impl aya::Pod for super::CgroupStats {}
+    unsafe impl aya::Pod for super::DenySetKey {}
+    unsafe impl aya::Pod for super::BindKey {}
 }
