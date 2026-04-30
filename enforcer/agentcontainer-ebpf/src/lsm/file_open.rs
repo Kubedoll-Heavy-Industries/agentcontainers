@@ -41,6 +41,9 @@ use crate::maps::{
 
 #[repr(C)]
 struct File {
+    _pad_flags: [u8; 48],
+    f_flags: u32,
+    _pad_path: [u8; 12],
     f_path: Path,
 }
 
@@ -52,9 +55,9 @@ struct Path {
 
 #[repr(C)]
 struct Dentry {
-    d_inode: *const Inode,
-    _d_parent: *const Dentry,
+    _pad_name: [u8; 32],
     d_name: Qstr,
+    d_inode: *const Inode,
 }
 
 #[repr(C)]
@@ -65,14 +68,17 @@ struct Qstr {
 
 #[repr(C)]
 struct Inode {
-    i_ino: u64,
+    _pad_sb: [u8; 40],
     i_sb: *const SuperBlock,
+    _pad_ino: [u8; 16],
+    i_ino: u64,
 }
 
 #[repr(C)]
 struct SuperBlock {
+    _pad_dev: [u8; 16],
     s_dev: u32,
-    _pad: u32,
+    _pad_magic: [u8; 76],
     s_magic: u64,
 }
 
@@ -317,12 +323,9 @@ fn try_file_open(ctx: &LsmContext) -> Result<i32, i64> {
     let ino: u64 =
         unsafe { bpf_probe_read_kernel(&(*inode_ptr).i_ino as *const u64).map_err(|e| e)? };
 
-    // Read file flags. f_flags is after f_path in struct file.
-    // We use the BPF raw helper to read at the right offset.
-    // In the kernel, struct file { struct path f_path; unsigned int f_flags; ... }
-    // struct path is 2 pointers (16 bytes on 64-bit), so f_flags is at offset 16.
+    // Read file flags at the kernel BTF offset for struct file.
     let flags: u32 = unsafe {
-        let flags_ptr = (file_ptr as *const u8).add(core::mem::size_of::<Path>()) as *const u32;
+        let flags_ptr = (file_ptr as *const u8).add(48) as *const u32;
         bpf_probe_read_kernel(flags_ptr).map_err(|e| e)?
     };
 

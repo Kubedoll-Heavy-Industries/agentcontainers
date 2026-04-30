@@ -215,13 +215,41 @@ mod linux {
         /// older kernels), a warning is logged but startup continues. Only
         /// critical failures (e.g., unable to open the root cgroup) are fatal.
         fn attach_programs(bpf: &mut Ebpf) -> anyhow::Result<()> {
-            use aya::programs::{CgroupAttachMode, CgroupSockAddr, KProbe, TracePoint};
+            use aya::programs::{CgroupAttachMode, CgroupSockAddr, KProbe, Lsm, TracePoint};
+            use aya::Btf;
             use std::os::fd::AsFd;
 
             // Open the root cgroup v2 hierarchy for cgroup-attached programs.
             let cgroup_file = std::fs::File::open("/sys/fs/cgroup/")
                 .map_err(|e| anyhow::anyhow!("failed to open cgroup v2 root: {e}"))?;
             let cgroup_fd = cgroup_file.as_fd();
+
+            let btf = Btf::from_sys_fs()
+                .map_err(|e| anyhow::anyhow!("failed to load kernel BTF for LSM hooks: {e}"))?;
+
+            // ---------------------------------------------------------------
+            // LSM hooks (required for process enforcement)
+            // ---------------------------------------------------------------
+
+            match bpf.program_mut("ac_bprm_check") {
+                Some(prog) => {
+                    let lsm: &mut Lsm = prog.try_into()?;
+                    lsm.load("bprm_check_security", &btf)?;
+                    lsm.attach()
+                        .map_err(|e| anyhow::anyhow!("failed to attach ac_bprm_check: {e}"))?;
+                    info!("attached ac_bprm_check to LSM bprm_check_security");
+                }
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "BPF program ac_bprm_check not found in ELF"
+                    ));
+                }
+            }
+
+            warn!(
+                "ac_file_open LSM enforcement disabled; filesystem policy needs container-root \
+                 path/glob resolution before this hook can be safely fail-closed"
+            );
 
             // ---------------------------------------------------------------
             // Tracepoints
@@ -561,9 +589,9 @@ mod linux {
             let meta = std::fs::metadata(path)
                 .map_err(|e| anyhow::anyhow!("failed to stat {path}: {e}"))?;
             let dev = meta.dev();
-            // major/minor device numbers from the combined dev_t.
-            let dev_major = ((dev >> 8) & 0xfff) as u32;
-            let dev_minor = (dev & 0xff) as u32;
+            // Match Linux's userspace dev_t major/minor decoding.
+            let dev_major = (((dev >> 8) & 0xfff) | ((dev >> 32) & !0xfff)) as u32;
+            let dev_minor = ((dev & 0xff) | ((dev >> 12) & !0xff)) as u32;
             Ok((meta.ino(), dev_major, dev_minor))
         }
     }

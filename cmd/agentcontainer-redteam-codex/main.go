@@ -58,7 +58,7 @@ func main() {
 	var (
 		baseDir       = flag.String("base-dir", "", "directory for the disposable red-team workspace (default: mktemp)")
 		agentBin      = flag.String("agentcontainer", "tmp/agentcontainer", "path to the agentcontainer binary")
-		image         = flag.String("image", "alpine:3.20", "agent container image to run")
+		image         = flag.String("image", "debian:bookworm-slim", "agent container image to run")
 		enforcerImage = flag.String("enforcer-image", envDefault("AC_ENFORCER_IMAGE", "agentcontainer-enforcer:verify"), "agentcontainer-enforcer image")
 		noStart       = flag.Bool("no-start", false, "prepare files and print commands without starting the container")
 	)
@@ -146,7 +146,7 @@ func writeConfig(path, image, enforcerImage string) error {
 				Shell: shellCaps{
 					Commands: []string{
 						"sh", "cat", "ls", "find", "head", "tail", "env", "id", "uname",
-						"pwd", "ps", "grep", "sed", "awk", "stat", "mount", "wget", "nc",
+						"pwd", "grep", "sed", "awk", "stat", "mount",
 					},
 					ReverseShellDetection: "enforce",
 				},

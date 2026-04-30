@@ -34,11 +34,15 @@ use crate::maps::{
 
 #[repr(C)]
 struct LinuxBinprm {
+    // Keep in sync with the kernel BTF layout for supported kernels. On the
+    // Docker Desktop 6.10 arm64 kernel, linux_binprm.file is at byte offset 64.
+    _pad: [u8; 64],
     file: *const File,
 }
 
 #[repr(C)]
 struct File {
+    _pad: [u8; 64],
     f_path: Path,
 }
 
@@ -50,17 +54,21 @@ struct Path {
 
 #[repr(C)]
 struct Dentry {
+    _pad: [u8; 48],
     d_inode: *const Inode,
 }
 
 #[repr(C)]
 struct Inode {
-    i_ino: u64,
+    _pad_sb: [u8; 40],
     i_sb: *const SuperBlock,
+    _pad_ino: [u8; 16],
+    i_ino: u64,
 }
 
 #[repr(C)]
 struct SuperBlock {
+    _pad: [u8; 16],
     s_dev: u32,
 }
 
@@ -168,7 +176,7 @@ fn bump_denyset_stat(idx: u32) {
 pub fn ac_bprm_check(ctx: LsmContext) -> i32 {
     match try_bprm_check(&ctx) {
         Ok(ret) => ret,
-        Err(_) => LSM_ALLOW, // Fail-open on BPF read errors (match C behavior)
+        Err(_) => LSM_DENY,
     }
 }
 

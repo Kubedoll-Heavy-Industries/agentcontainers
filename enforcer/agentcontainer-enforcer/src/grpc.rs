@@ -10,6 +10,7 @@
 //! write lock.
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 
 use sha2::{Digest as ShaDigest, Sha256};
@@ -359,9 +360,16 @@ impl Enforcer for EnforcerService {
             }
         }
 
-        let proc_policy = policy::ProcessPolicy {
-            allowed_binaries: req.allowed_binaries,
+        let allowed_binaries = if let Some(init_pid) = {
+            let pids = self.container_pids.read().await;
+            pids.get(&req.container_id).copied()
+        } {
+            resolve_process_binaries(init_pid, &req.allowed_binaries)?
+        } else {
+            req.allowed_binaries
         };
+
+        let proc_policy = policy::ProcessPolicy { allowed_binaries };
 
         match self
             .manager
@@ -1276,9 +1284,47 @@ fn stat_binary(path: &str) -> Result<(u64, u32, u32), Status> {
     let meta = std::fs::metadata(path)
         .map_err(|e| Status::internal(format!("failed to stat {}: {}", path, e)))?;
     let dev = meta.dev();
-    let dev_major = ((dev >> 8) & 0xfff) as u32;
-    let dev_minor = (dev & 0xff) as u32;
+    let dev_major = (((dev >> 8) & 0xfff) | ((dev >> 32) & !0xfff)) as u32;
+    let dev_minor = ((dev & 0xff) | ((dev >> 12) & !0xff)) as u32;
     Ok((meta.ino(), dev_major, dev_minor))
+}
+
+fn resolve_process_binaries(init_pid: u32, binaries: &[String]) -> Result<Vec<String>, Status> {
+    let mut resolved = Vec::with_capacity(binaries.len());
+    for binary in binaries {
+        resolved.push(resolve_process_binary(init_pid, binary)?);
+    }
+    Ok(resolved)
+}
+
+fn resolve_process_binary(init_pid: u32, binary: &str) -> Result<String, Status> {
+    if binary.trim().is_empty() {
+        return Err(Status::invalid_argument("process binary must not be empty"));
+    }
+
+    let proc_root = format!("/proc/{}/root", init_pid);
+    if binary.starts_with('/') {
+        let candidate = format!("{}{}", proc_root, binary);
+        if Path::new(&candidate).exists() {
+            return Ok(candidate);
+        }
+        return Err(Status::invalid_argument(format!(
+            "allowed binary {} does not exist in container root",
+            binary
+        )));
+    }
+
+    for dir in ["/bin", "/usr/bin", "/usr/local/bin", "/sbin", "/usr/sbin"] {
+        let candidate = format!("{proc_root}{dir}/{binary}");
+        if Path::new(&candidate).exists() {
+            return Ok(candidate);
+        }
+    }
+
+    Err(Status::invalid_argument(format!(
+        "allowed binary {} could not be resolved in container PATH",
+        binary
+    )))
 }
 
 /// Create the gRPC server with a given policy manager.
