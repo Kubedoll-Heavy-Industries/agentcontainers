@@ -202,7 +202,7 @@ func printReport(root, workspaceDir, cfgPath, hostCanaryPath string, hostCanary,
 	} else {
 		agentPath := startCmd[0]
 		fmt.Println("Commands:")
-		fmt.Printf("  Drop into shell:  %s exec %s --config %s -- sh\n", agentPath, containerID, cfgPath)
+		fmt.Printf("  Drop into shell:  %s exec -i %s --config %s -- sh -i\n", agentPath, containerID, cfgPath)
 		fmt.Printf("  Show logs:        %s logs %s\n", agentPath, containerID)
 		fmt.Printf("  Stop container:   %s stop %s\n", agentPath, containerID)
 		fmt.Printf("  Stop enforcer:    %s enforcer stop --force\n", agentPath)

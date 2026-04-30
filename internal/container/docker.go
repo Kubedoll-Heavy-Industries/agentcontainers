@@ -321,6 +321,66 @@ func (d *DockerRuntime) Exec(ctx context.Context, session *Session, cmd []string
 	}, nil
 }
 
+// ExecInteractive executes a command inside the running container while
+// attaching local stdio. It is intended for shells and other interactive tools.
+func (d *DockerRuntime) ExecInteractive(ctx context.Context, session *Session, cmd []string, execIO ExecIO) (int, error) {
+	if session == nil {
+		return 0, fmt.Errorf("docker runtime: nil session")
+	}
+	if len(cmd) == 0 {
+		return 0, fmt.Errorf("docker runtime: empty command")
+	}
+	stdout := execIO.Stdout
+	if stdout == nil {
+		stdout = io.Discard
+	}
+	stderr := execIO.Stderr
+	if stderr == nil {
+		stderr = io.Discard
+	}
+
+	execResp, err := d.client.ExecCreate(ctx, session.ContainerID, client.ExecCreateOptions{
+		Cmd:          cmd,
+		AttachStdin:  execIO.Stdin != nil,
+		AttachStdout: true,
+		AttachStderr: true,
+		TTY:          execIO.TTY,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("docker runtime: creating exec: %w", err)
+	}
+
+	attach, err := d.client.ExecAttach(ctx, execResp.ID, client.ExecAttachOptions{
+		TTY: execIO.TTY,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("docker runtime: attaching exec: %w", err)
+	}
+	defer attach.Close()
+
+	if execIO.Stdin != nil {
+		go func() {
+			_, _ = io.Copy(attach.Conn, execIO.Stdin)
+			_ = attach.CloseWrite()
+		}()
+	}
+
+	if execIO.TTY {
+		if _, err := io.Copy(stdout, attach.Reader); err != nil {
+			return 0, fmt.Errorf("docker runtime: reading exec output: %w", err)
+		}
+	} else if _, err := stdcopy.StdCopy(stdout, stderr, attach.Reader); err != nil {
+		return 0, fmt.Errorf("docker runtime: reading exec output: %w", err)
+	}
+
+	inspect, err := d.client.ExecInspect(ctx, execResp.ID, client.ExecInspectOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("docker runtime: inspecting exec: %w", err)
+	}
+
+	return inspect.ExitCode, nil
+}
+
 // Logs returns a ReadCloser that streams the container's combined stdout/stderr.
 func (d *DockerRuntime) Logs(ctx context.Context, session *Session) (io.ReadCloser, error) {
 	if session == nil {

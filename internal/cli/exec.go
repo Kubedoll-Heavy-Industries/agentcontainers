@@ -21,9 +21,10 @@ var execRuntimeFactory = newRuntime
 
 func newExecCmd() *cobra.Command {
 	var (
-		runtime    string
-		configPath string
-		envVars    []string
+		runtime     string
+		configPath  string
+		envVars     []string
+		interactive bool
 	)
 
 	cmd := &cobra.Command{
@@ -47,18 +48,19 @@ Environment variables can be injected with -e KEY=VALUE. Secret URI schemes
 				return fmt.Errorf("exec: no command specified (usage: agentcontainer exec <container-id> -- <command> [args...])")
 			}
 
-			return runExec(cmd, containerID, cmdArgs, runtime, configPath, envVars)
+			return runExec(cmd, containerID, cmdArgs, runtime, configPath, envVars, interactive)
 		},
 	}
 
 	cmd.Flags().StringVar(&runtime, "runtime", "docker", "Container runtime backend (auto|docker|compose|sandbox)")
 	cmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to agentcontainer.json")
 	cmd.Flags().StringArrayVarP(&envVars, "env", "e", nil, "Set environment variables (KEY=VALUE or KEY=op://...)")
+	cmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "Attach stdin and allocate a TTY for interactive commands")
 
 	return cmd
 }
 
-func runExec(cmd *cobra.Command, containerID string, execCmd []string, runtimeFlag string, configPath string, envVars []string) error {
+func runExec(cmd *cobra.Command, containerID string, execCmd []string, runtimeFlag string, configPath string, envVars []string, interactive bool) error {
 	// BPF enforcement is already active on the container's cgroup from agentcontainer run.
 	// The runtime here only needs LevelNone because we are not re-applying
 	// policy — the approval broker provides the Go-side defense-in-depth.
@@ -124,6 +126,22 @@ func runExec(cmd *cobra.Command, containerID string, execCmd []string, runtimeFl
 	session := &container.Session{
 		ContainerID: containerID,
 		RuntimeType: container.RuntimeType(runtimeFlag),
+	}
+
+	if interactive {
+		exitCode, err := brokerRT.ExecInteractive(cmd.Context(), session, finalCmd, container.ExecIO{
+			Stdin:  cmd.InOrStdin(),
+			Stdout: cmd.OutOrStdout(),
+			Stderr: cmd.ErrOrStderr(),
+			TTY:    true,
+		})
+		if err != nil {
+			return fmt.Errorf("exec: %w", err)
+		}
+		if exitCode != 0 {
+			return fmt.Errorf("exec: command exited with code %d", exitCode)
+		}
+		return nil
 	}
 
 	result, err := brokerRT.Exec(cmd.Context(), session, finalCmd)

@@ -218,7 +218,7 @@ func TestRunExec_InvalidDiscoveredConfigDoesNotFallback(t *testing.T) {
 	})
 
 	cmd := newExecCmd()
-	err := runExec(cmd, "abc123", []string{"ls"}, "docker", "", nil)
+	err := runExec(cmd, "abc123", []string{"ls"}, "docker", "", nil, false)
 	if err == nil {
 		t.Fatal("expected config parse error")
 	}
@@ -256,7 +256,7 @@ func TestRunExec_BareEnvUsesHostValue(t *testing.T) {
 	})
 
 	cmd := newExecCmd()
-	if err := runExec(cmd, "abc123", []string{"printenv", "INHERITED_KEY"}, "docker", cfgPath, []string{"INHERITED_KEY"}); err != nil {
+	if err := runExec(cmd, "abc123", []string{"printenv", "INHERITED_KEY"}, "docker", cfgPath, []string{"INHERITED_KEY"}, false); err != nil {
 		t.Fatalf("runExec() error = %v", err)
 	}
 
@@ -287,7 +287,7 @@ func TestRunExec_BareEnvMissingHostValueErrors(t *testing.T) {
 	})
 
 	cmd := newExecCmd()
-	err := runExec(cmd, "abc123", []string{"printenv", "MISSING_KEY"}, "docker", cfgPath, []string{"MISSING_KEY"})
+	err := runExec(cmd, "abc123", []string{"printenv", "MISSING_KEY"}, "docker", cfgPath, []string{"MISSING_KEY"}, false)
 	if err == nil {
 		t.Fatal("expected missing env error")
 	}
