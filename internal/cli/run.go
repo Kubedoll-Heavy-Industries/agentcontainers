@@ -46,11 +46,12 @@ var (
 
 func newRunCmd() *cobra.Command {
 	var (
-		detach             bool
-		timeout            time.Duration
-		configPath         string
-		runtimeFlag        string
-		insecureSkipVerify bool
+		detach                bool
+		timeout               time.Duration
+		configPath            string
+		runtimeFlag           string
+		insecureSkipVerify    bool
+		insecureSkipOrgPolicy bool
 	)
 
 	cmd := &cobra.Command{
@@ -64,7 +65,7 @@ Org policy is resolved automatically from the workspace hierarchy
 (.agentcontainers/policy.json) or from the lockfile's pinned digest.
 It cannot be overridden at runtime.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRun(cmd, detach, timeout, configPath, runtimeFlag, insecureSkipVerify)
+			return runRun(cmd, detach, timeout, configPath, runtimeFlag, insecureSkipVerify, insecureSkipOrgPolicy)
 		},
 	}
 
@@ -73,6 +74,7 @@ It cannot be overridden at runtime.`,
 	cmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to agentcontainer.json")
 	cmd.Flags().StringVar(&runtimeFlag, "runtime", "docker", "Container runtime backend (auto|docker|compose|sandbox)")
 	cmd.Flags().BoolVar(&insecureSkipVerify, "insecure-skip-verify", false, "Skip cosign signature verification (dev only)")
+	cmd.Flags().BoolVar(&insecureSkipOrgPolicy, "insecure-skip-org-policy", false, "Skip image org-policy extraction (dev/local images only)")
 
 	return cmd
 }
@@ -140,7 +142,7 @@ func policyImageRef(imageTag, cfgPath string) string {
 	return ref + "@" + lf.Resolved.Image.Digest
 }
 
-func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath string, runtimeFlag string, insecureSkipVerify bool) error {
+func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath string, runtimeFlag string, insecureSkipVerify bool, insecureSkipOrgPolicy bool) error {
 	// 0. Resolve "auto" to a concrete runtime type so all downstream checks
 	// (e.g. sandbox sidecar skip) work regardless of the original flag value.
 	resolvedRuntime := container.RuntimeType(runtimeFlag)
@@ -176,9 +178,15 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	// regardless of tag mutation.
 	policyRef := policyImageRef(cfg.Image, cfgPath)
 
-	orgPolicy, err := runExtractPolicy(cmd.Context(), policyRef)
-	if err != nil {
-		return fmt.Errorf("run: extracting org policy from image: %w", err)
+	orgPolicy := orgpolicy.DefaultPolicy()
+	if insecureSkipOrgPolicy {
+		logger.Warn("skipping image org-policy extraction (--insecure-skip-org-policy)")
+	} else {
+		var err error
+		orgPolicy, err = runExtractPolicy(cmd.Context(), policyRef)
+		if err != nil {
+			return fmt.Errorf("run: extracting org policy from image: %w", err)
+		}
 	}
 	if err := runMergePolicy(orgPolicy, cfg); err != nil {
 		return fmt.Errorf("run: org policy violation: %w", err)

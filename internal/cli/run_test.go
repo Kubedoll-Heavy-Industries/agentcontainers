@@ -754,7 +754,7 @@ func TestRunRun_StartupFailureStopsManagedSidecar(t *testing.T) {
 	cmd.SetErr(&out)
 	cmd.SetContext(context.Background())
 
-	err := runRun(cmd, false, time.Minute, cfgPath, "docker", false)
+	err := runRun(cmd, false, time.Minute, cfgPath, "docker", false, false)
 	if err == nil {
 		t.Fatal("expected startup error")
 	}

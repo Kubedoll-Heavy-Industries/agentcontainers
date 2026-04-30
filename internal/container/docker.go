@@ -626,10 +626,6 @@ func parseMount(raw string) *mount.Mount {
 		target = fields["destination"]
 	}
 
-	if source == "" || target == "" {
-		return nil
-	}
-
 	mt := mount.TypeBind
 	if t, ok := fields["type"]; ok {
 		switch t {
@@ -640,6 +636,10 @@ func parseMount(raw string) *mount.Mount {
 		case "tmpfs":
 			mt = mount.TypeTmpfs
 		}
+	}
+
+	if target == "" || (source == "" && mt != mount.TypeTmpfs) {
+		return nil
 	}
 
 	_, readOnly := fields["readonly"]

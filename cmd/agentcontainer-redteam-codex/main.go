@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -18,14 +19,16 @@ import (
 type agentConfig struct {
 	Name            string      `json:"name"`
 	Image           string      `json:"image"`
+	Mounts          []string    `json:"mounts,omitempty"`
 	WorkspaceFolder string      `json:"workspaceFolder"`
 	Agent           agentPolicy `json:"agent"`
 }
 
 type agentPolicy struct {
-	Enforcer     enforcerConfig `json:"enforcer"`
-	Capabilities capabilities   `json:"capabilities"`
-	Policy       runPolicy      `json:"policy"`
+	Enforcer     enforcerConfig          `json:"enforcer"`
+	Capabilities capabilities            `json:"capabilities"`
+	Secrets      map[string]secretConfig `json:"secrets,omitempty"`
+	Policy       runPolicy               `json:"policy"`
 }
 
 type enforcerConfig struct {
@@ -35,6 +38,7 @@ type enforcerConfig struct {
 
 type capabilities struct {
 	Filesystem filesystemCaps `json:"filesystem"`
+	Network    networkCaps    `json:"network,omitempty"`
 	Shell      shellCaps      `json:"shell"`
 }
 
@@ -49,17 +53,32 @@ type shellCaps struct {
 	ReverseShellDetection string   `json:"reverseShellDetection"`
 }
 
+type networkCaps struct {
+	Egress []egressRule `json:"egress,omitempty"`
+	Deny   []string     `json:"deny,omitempty"`
+}
+
+type egressRule struct {
+	Host string `json:"host"`
+	Port int    `json:"port,omitempty"`
+}
+
 type runPolicy struct {
 	AuditLog   bool   `json:"auditLog"`
 	Escalation string `json:"escalation"`
+}
+
+type secretConfig struct {
+	Provider string `json:"provider"`
 }
 
 func main() {
 	var (
 		baseDir       = flag.String("base-dir", "", "directory for the disposable red-team workspace (default: mktemp)")
 		agentBin      = flag.String("agentcontainer", "tmp/agentcontainer", "path to the agentcontainer binary")
-		image         = flag.String("image", "debian:bookworm-slim", "agent container image to run")
+		image         = flag.String("image", "agentcontainer-codex-redteam:verify", "agent container image to run")
 		enforcerImage = flag.String("enforcer-image", envDefault("AC_ENFORCER_IMAGE", "agentcontainer-enforcer:verify"), "agentcontainer-enforcer image")
+		buildImage    = flag.Bool("build-image", true, "build the default Codex red-team image before starting")
 		noStart       = flag.Bool("no-start", false, "prepare files and print commands without starting the container")
 	)
 	flag.Parse()
@@ -101,7 +120,15 @@ func main() {
 		die("write config: %v", err)
 	}
 
-	startCmd := []string{agentPath, "run", "--detach", "--config", cfgPath, "--runtime", "docker"}
+	if *buildImage && !*noStart {
+		dockerfileDir := filepath.Join(repoRoot(), "cmd", "agentcontainer-redteam-codex")
+		output, err := runCommand(workspaceDir, "docker", "build", "-t", *image, dockerfileDir)
+		if err != nil {
+			die("build Codex red-team image: %v\n%s", err, output)
+		}
+	}
+
+	startCmd := []string{agentPath, "run", "--detach", "--config", cfgPath, "--runtime", "docker", "--insecure-skip-org-policy"}
 	var output string
 	var containerID string
 	if !*noStart {
@@ -131,9 +158,17 @@ func prepareRoot(base string) (string, error) {
 }
 
 func writeConfig(path, image, enforcerImage string) error {
+	secrets := map[string]secretConfig(nil)
+	if os.Getenv("OPENAI_API_KEY") != "" {
+		secrets = map[string]secretConfig{
+			"OPENAI_API_KEY": {Provider: "env://OPENAI_API_KEY"},
+		}
+	}
+
 	cfg := agentConfig{
 		Name:            "codex-redteam",
 		Image:           image,
+		Mounts:          []string{"type=tmpfs,target=/root", "type=tmpfs,target=/tmp"},
 		WorkspaceFolder: "/workspace",
 		Agent: agentPolicy{
 			Enforcer: enforcerConfig{Image: enforcerImage, Required: true},
@@ -143,15 +178,24 @@ func writeConfig(path, image, enforcerImage string) error {
 					Write: []string{"/workspace/**", "/tmp/**"},
 					Deny:  []string{"/var/run/docker.sock", "/run/containerd/containerd.sock", "/run/crio/crio.sock"},
 				},
+				Network: networkCaps{
+					Egress: []egressRule{
+						{Host: "api.openai.com", Port: 443},
+					},
+					Deny: []string{"169.254.169.254"},
+				},
 				Shell: shellCaps{
 					Commands: []string{
-						"sh", "cat", "ls", "find", "head", "tail", "env", "id", "uname",
-						"pwd", "grep", "sed", "awk", "stat", "mount",
+						"codex", "codex-real", "codex-native", "node", "npm", "npx", "git", "rg",
+						"sh", "bash", "cat", "ls", "find", "head", "tail", "env",
+						"id", "uname", "pwd", "grep", "sed", "awk", "stat", "mount",
+						"python3", "mkdir", "touch", "chmod", "cp", "mv", "rm",
 					},
 					ReverseShellDetection: "enforce",
 				},
 			},
-			Policy: runPolicy{AuditLog: true, Escalation: "deny"},
+			Policy:  runPolicy{AuditLog: true, Escalation: "deny"},
+			Secrets: secrets,
 		},
 	}
 	data, err := json.MarshalIndent(cfg, "", "  ")
@@ -160,6 +204,14 @@ func writeConfig(path, image, enforcerImage string) error {
 	}
 	data = append(data, '\n')
 	return os.WriteFile(path, data, 0644)
+}
+
+func repoRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "."
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
 }
 
 func runCommand(workdir string, args ...string) (string, error) {
