@@ -10,7 +10,8 @@ use aya_ebpf::macros::map;
 use aya_ebpf::maps::{Array, HashMap, LpmTrie, PerCpuArray, PerCpuHashMap, RingBuf};
 
 use agentcontainer_common::maps::{
-    BindKey, CgroupStats, DenySetKey, FsInodeKey, PortKeyV4, SecretAclKey, SecretAclValue,
+    CgroupStats, DenySetKey, ScopedBindKey, ScopedFsInodeKey, ScopedLpmKeyV4, ScopedLpmKeyV6,
+    ScopedPortKeyV4, SecretAclKey, SecretAclValue,
 };
 use agentcontainer_common::siphash::SipHashKey;
 
@@ -23,16 +24,15 @@ pub static ENFORCED_CGROUPS: HashMap<u64, u8> = HashMap::with_max_entries(256, 0
 
 // --- Network maps ---
 
-/// IPv4 CIDRs that are permitted (LPM trie longest prefix match).
-/// Key type is `u32` (network-byte-order IPv4 address). The prefix length
-/// is supplied via `Key::new(prefix_len, addr)` at lookup/insert time.
+/// Per-cgroup IPv4 CIDRs that are permitted (LPM trie longest prefix match).
+/// Prefix length includes the 64-bit cgroup ID plus IPv4 prefix bits.
 #[map]
-pub static ALLOWED_V4: LpmTrie<u32, u8> = LpmTrie::with_max_entries(4096, 0);
+pub static ALLOWED_V4: LpmTrie<ScopedLpmKeyV4, u8> = LpmTrie::with_max_entries(4096, 0);
 
-/// IPv6 CIDRs that are permitted.
-/// Key type is `[u32; 4]` (four 32-bit words of IPv6 address in network order).
+/// Per-cgroup IPv6 CIDRs that are permitted.
+/// Prefix length includes the 64-bit cgroup ID plus IPv6 prefix bits.
 #[map]
-pub static ALLOWED_V6: LpmTrie<[u32; 4], u8> = LpmTrie::with_max_entries(4096, 0);
+pub static ALLOWED_V6: LpmTrie<ScopedLpmKeyV6, u8> = LpmTrie::with_max_entries(4096, 0);
 
 /// IPv4 CIDRs that are always denied (e.g., cloud metadata endpoints).
 /// Checked BEFORE the allow lists.
@@ -43,10 +43,10 @@ pub static BLOCKED_CIDRS_V4: LpmTrie<u32, u8> = LpmTrie::with_max_entries(256, 0
 #[map]
 pub static BLOCKED_CIDRS_V6: LpmTrie<[u32; 4], u8> = LpmTrie::with_max_entries(256, 0);
 
-/// IPv4 IP+port+protocol tuples that are explicitly permitted.
+/// Per-cgroup IPv4 IP+port+protocol tuples that are explicitly permitted.
 /// Checked after blocked CIDRs but before broad allowed CIDRs.
 #[map]
-pub static ALLOWED_PORTS: HashMap<PortKeyV4, u8> = HashMap::with_max_entries(1024, 0);
+pub static ALLOWED_PORTS: HashMap<ScopedPortKeyV4, u8> = HashMap::with_max_entries(1024, 0);
 
 /// Ring buffer for network enforcement events.
 #[map]
@@ -80,11 +80,11 @@ pub static DNS_EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
 
 /// Allowed inodes with permission bits (read/write).
 #[map]
-pub static ALLOWED_INODES: HashMap<FsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
+pub static ALLOWED_INODES: HashMap<ScopedFsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
 
 /// Denied inodes (always blocked).
 #[map]
-pub static DENIED_INODES: HashMap<FsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
+pub static DENIED_INODES: HashMap<ScopedFsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
 
 /// Ring buffer for filesystem enforcement events.
 #[map]
@@ -97,9 +97,9 @@ pub static FS_STATS: PerCpuArray<u64> = PerCpuArray::with_max_entries(16, 0);
 // --- Process maps ---
 
 /// Allowed executable inodes (binary allowlist).
-/// Uses FsInodeKey since exec inodes have the same layout.
+/// Uses ScopedFsInodeKey since exec inodes have the same layout.
 #[map]
-pub static ALLOWED_EXECS: HashMap<FsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
+pub static ALLOWED_EXECS: HashMap<ScopedFsInodeKey, u8> = HashMap::with_max_entries(4096, 0);
 
 /// Ring buffer for process enforcement events.
 #[map]
@@ -142,7 +142,7 @@ pub static DENY_SET_TRANSITIONS: HashMap<DenySetKey, u32> = HashMap::with_max_en
 
 /// Allowed bind ports (port + protocol).
 #[map]
-pub static ALLOWED_BINDS: HashMap<BindKey, u8> = HashMap::with_max_entries(256, 0);
+pub static ALLOWED_BINDS: HashMap<ScopedBindKey, u8> = HashMap::with_max_entries(256, 0);
 
 /// Ring buffer for bind enforcement events.
 #[map]

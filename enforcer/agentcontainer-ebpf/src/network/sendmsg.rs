@@ -24,7 +24,9 @@ use agentcontainer_common::events::{
 use agentcontainer_common::helpers::{
     extract_v4_from_mapped, is_loopback_v4, is_loopback_v6, is_v4_mapped_v6, ntohl,
 };
-use agentcontainer_common::maps::{PortKeyV4, VERDICT_ALLOW, VERDICT_BLOCK};
+use agentcontainer_common::maps::{
+    ScopedLpmKeyV4, ScopedLpmKeyV6, ScopedPortKeyV4, VERDICT_ALLOW, VERDICT_BLOCK,
+};
 
 use crate::maps::{
     bump_cgroup_stat, ALLOWED_PORTS, ALLOWED_V4, ALLOWED_V6, BLOCKED_CIDRS_V4, BLOCKED_CIDRS_V6,
@@ -35,6 +37,27 @@ use aya_ebpf::helpers::bpf_get_current_cgroup_id;
 
 /// Event type for sendmsg hooks (matches C AC_EVENT_NET_SENDMSG = 2).
 const EVENT_NET_SENDMSG: u32 = 2;
+
+const CGROUP_PREFIX_BITS: u32 = 64;
+const IPV4_PREFIX_BITS: u32 = CGROUP_PREFIX_BITS + 32;
+const IPV6_PREFIX_BITS: u32 = CGROUP_PREFIX_BITS + 128;
+
+#[inline(always)]
+fn scoped_lpm_v4(cgroup_id: u64, addr: u32) -> Key<ScopedLpmKeyV4> {
+    Key::new(
+        IPV4_PREFIX_BITS,
+        ScopedLpmKeyV4 {
+            cgroup_id,
+            addr,
+            _pad: 0,
+        },
+    )
+}
+
+#[inline(always)]
+fn scoped_lpm_v6(cgroup_id: u64, addr: [u32; 4]) -> Key<ScopedLpmKeyV6> {
+    Key::new(IPV6_PREFIX_BITS, ScopedLpmKeyV6 { cgroup_id, addr })
+}
 
 /// Get the cgroup_id if the current cgroup is enforced, or None.
 #[inline(always)]
@@ -165,7 +188,8 @@ fn try_sendmsg4(ctx: &SockAddrContext) -> Result<i32, i64> {
     }
 
     // 4. Check allowed ports (specific IP+port+protocol tuples).
-    let pk = PortKeyV4 {
+    let pk = ScopedPortKeyV4 {
+        cgroup_id,
         ip: dst,
         port,
         protocol: proto,
@@ -178,7 +202,8 @@ fn try_sendmsg4(ctx: &SockAddrContext) -> Result<i32, i64> {
     }
 
     // 5. Check allowed CIDRs (LPM trie longest prefix match).
-    if unsafe { ALLOWED_V4.get(&lpm) }.is_some() {
+    let scoped_lpm = scoped_lpm_v4(cgroup_id, dst);
+    if unsafe { ALLOWED_V4.get(&scoped_lpm) }.is_some() {
         bump_stat(STAT_NET_ALLOWED);
         bump_cgroup_stat(cgroup_id, CGROUP_STAT_NET_ALLOWED);
         return Ok(VERDICT_ALLOW);
@@ -241,7 +266,8 @@ fn try_sendmsg6(ctx: &SockAddrContext) -> Result<i32, i64> {
         }
 
         // 3b. Allow if IPv4 address matches an allowed port rule.
-        let pk = PortKeyV4 {
+        let pk = ScopedPortKeyV4 {
+            cgroup_id,
             ip: v4addr,
             port,
             protocol: proto,
@@ -254,7 +280,8 @@ fn try_sendmsg6(ctx: &SockAddrContext) -> Result<i32, i64> {
         }
 
         // 3c. Allow if IPv4 address matches an allowed CIDR.
-        if unsafe { ALLOWED_V4.get(&lpm4) }.is_some() {
+        let scoped_lpm4 = scoped_lpm_v4(cgroup_id, v4addr);
+        if unsafe { ALLOWED_V4.get(&scoped_lpm4) }.is_some() {
             bump_stat(STAT_NET_ALLOWED);
             bump_cgroup_stat(cgroup_id, CGROUP_STAT_NET_ALLOWED);
             return Ok(VERDICT_ALLOW);
@@ -271,7 +298,8 @@ fn try_sendmsg6(ctx: &SockAddrContext) -> Result<i32, i64> {
     }
 
     // 5. Check IPv6 allowed CIDRs.
-    if unsafe { ALLOWED_V6.get(&lpm) }.is_some() {
+    let scoped_lpm = scoped_lpm_v6(cgroup_id, dst6);
+    if unsafe { ALLOWED_V6.get(&scoped_lpm) }.is_some() {
         bump_stat(STAT_NET_ALLOWED);
         bump_cgroup_stat(cgroup_id, CGROUP_STAT_NET_ALLOWED);
         return Ok(VERDICT_ALLOW);

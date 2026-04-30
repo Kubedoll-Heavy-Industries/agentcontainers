@@ -23,7 +23,8 @@ use agentcontainer_common::events::{
     CRED_REASON_WRITE_DENIED, EVENT_CRED_OPEN,
 };
 use agentcontainer_common::maps::{
-    FsInodeKey, SecretAclKey, DENTRY_NAME_LEN, FS_PERM_WRITE, LSM_ALLOW, LSM_DENY, PROC_SUPER_MAGIC,
+    ScopedFsInodeKey, SecretAclKey, DENTRY_NAME_LEN, FS_PERM_WRITE, LSM_ALLOW, LSM_DENY,
+    PROC_SUPER_MAGIC,
 };
 
 use crate::maps::{
@@ -341,8 +342,9 @@ fn try_file_open(ctx: &LsmContext) -> Result<i32, i64> {
 
     // Build lookup key with actual device numbers.
     // Linux dev_t: MAJOR(dev) = (dev >> 20) & 0xfff, MINOR(dev) = dev & 0xfffff
-    let key = FsInodeKey {
+    let key = ScopedFsInodeKey {
         inode: ino,
+        cgroup_id: cgid,
         dev_major: (s_dev >> 20) & 0xfff,
         dev_minor: s_dev & 0xfffff,
     };

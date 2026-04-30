@@ -32,6 +32,38 @@ pub struct PortKeyV4 {
     pub _pad: u8,
 }
 
+/// Scoped key data for allowed IPv4 LPM trie entries.
+///
+/// Used with `aya`/`aya-ebpf` LPM `Key`, which stores the prefix length outside
+/// this struct. The cgroup must be the first data field so exact cgroup matching
+/// can be included in the LPM prefix before the address bits.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopedLpmKeyV4 {
+    pub cgroup_id: u64,
+    pub addr: u32,
+    pub _pad: u32,
+}
+
+/// Scoped key data for allowed IPv6 LPM trie entries.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopedLpmKeyV6 {
+    pub cgroup_id: u64,
+    pub addr: [u32; 4],
+}
+
+/// Key for container-scoped IPv4 IP+port+protocol allow rules.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopedPortKeyV4 {
+    pub cgroup_id: u64,
+    pub ip: u32,
+    pub port: u16,
+    pub protocol: u8,
+    pub _pad: u8,
+}
+
 // --- Filesystem map keys ---
 
 /// Key for the filesystem inode allow/deny maps.
@@ -39,6 +71,16 @@ pub struct PortKeyV4 {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FsInodeKey {
     pub inode: u64,
+    pub dev_major: u32,
+    pub dev_minor: u32,
+}
+
+/// Container-scoped filesystem inode key.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopedFsInodeKey {
+    pub inode: u64,
+    pub cgroup_id: u64,
     pub dev_major: u32,
     pub dev_minor: u32,
 }
@@ -62,6 +104,16 @@ pub struct DenySetKey {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BindKey {
+    pub port: u16,
+    pub protocol: u8,
+    pub _pad: u8,
+}
+
+/// Container-scoped bind allow key.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopedBindKey {
+    pub cgroup_id: u64,
     pub port: u16,
     pub protocol: u8,
     pub _pad: u8,
@@ -139,7 +191,11 @@ pub const DENTRY_NAME_LEN: usize = 32;
 #[cfg(target_os = "linux")]
 mod pod_impls {
     unsafe impl aya::Pod for super::PortKeyV4 {}
+    unsafe impl aya::Pod for super::ScopedLpmKeyV4 {}
+    unsafe impl aya::Pod for super::ScopedLpmKeyV6 {}
+    unsafe impl aya::Pod for super::ScopedPortKeyV4 {}
     unsafe impl aya::Pod for super::FsInodeKey {}
+    unsafe impl aya::Pod for super::ScopedFsInodeKey {}
     unsafe impl aya::Pod for super::SecretAclKey {}
     unsafe impl aya::Pod for super::SecretAclValue {}
     unsafe impl aya::Pod for super::LpmKeyV4 {}
@@ -147,4 +203,5 @@ mod pod_impls {
     unsafe impl aya::Pod for super::CgroupStats {}
     unsafe impl aya::Pod for super::DenySetKey {}
     unsafe impl aya::Pod for super::BindKey {}
+    unsafe impl aya::Pod for super::ScopedBindKey {}
 }

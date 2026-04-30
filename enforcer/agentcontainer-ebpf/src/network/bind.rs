@@ -18,7 +18,7 @@ use aya_ebpf::macros::cgroup_sock_addr;
 use aya_ebpf::programs::SockAddrContext;
 
 use agentcontainer_common::events::{BindEvent, COMM_MAX, STAT_BIND_ALLOWED, STAT_BIND_BLOCKED};
-use agentcontainer_common::maps::{BindKey, VERDICT_ALLOW, VERDICT_BLOCK};
+use agentcontainer_common::maps::{ScopedBindKey, VERDICT_ALLOW, VERDICT_BLOCK};
 
 use crate::maps::{
     bump_cgroup_stat, ALLOWED_BINDS, BIND_EVENTS, CGROUP_STAT_BIND_ALLOWED,
@@ -109,9 +109,10 @@ fn try_bind(ctx: &SockAddrContext) -> Result<i32, i64> {
         return Ok(VERDICT_ALLOW);
     }
 
-    // 4. Check ALLOWED_BINDS map for (port, protocol=TCP).
+    // 4. Check ALLOWED_BINDS map for this cgroup and (port, protocol).
     let protocol = sock_addr.protocol as u8;
-    let key = BindKey {
+    let key = ScopedBindKey {
+        cgroup_id,
         port,
         protocol,
         _pad: 0,

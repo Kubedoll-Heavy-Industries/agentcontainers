@@ -19,7 +19,7 @@ use agentcontainer_common::events::{
     DenySetEvent, ExecEvent, STAT_DENYSET_ALLOWED, STAT_DENYSET_BLOCKED, STAT_PROC_ALLOWED,
     STAT_PROC_BLOCKED,
 };
-use agentcontainer_common::maps::{DenySetKey, FsInodeKey, LSM_ALLOW, LSM_DENY};
+use agentcontainer_common::maps::{DenySetKey, ScopedFsInodeKey, LSM_ALLOW, LSM_DENY};
 
 use crate::maps::{
     bump_cgroup_stat, ALLOWED_EXECS, CGROUP_STAT_DENYSET_ALLOWED, CGROUP_STAT_DENYSET_BLOCKED,
@@ -232,8 +232,9 @@ fn try_bprm_check(ctx: &LsmContext) -> Result<i32, i64> {
 
     // Build lookup key with device major/minor numbers.
     // Linux dev_t: MAJOR = (dev >> 20) & 0xfff, MINOR = dev & 0xfffff.
-    let key = FsInodeKey {
+    let key = ScopedFsInodeKey {
         inode: ino,
+        cgroup_id,
         dev_major: (s_dev >> 20) & 0xfff,
         dev_minor: s_dev & 0xfffff,
     };
@@ -247,7 +248,7 @@ fn try_bprm_check(ctx: &LsmContext) -> Result<i32, i64> {
         return Ok(LSM_DENY);
     }
 
-    // Inode is in the global allowlist. Now check deny-set policy.
+    // Inode is allowed for this cgroup. Now check deny-set policy.
     bump_stat(STAT_PROC_ALLOWED);
     bump_cgroup_stat(cgroup_id, CGROUP_STAT_PROC_ALLOWED);
 

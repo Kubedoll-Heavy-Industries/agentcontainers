@@ -33,6 +33,16 @@ import (
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/signing"
 )
 
+var (
+	runRuntimeFactory       = newRuntime
+	runResolveSidecar       = resolveSidecar
+	runExtractPolicy        = orgpolicy.ExtractPolicy
+	runMergePolicy          = orgpolicy.MergePolicy
+	runVerifyImageSignature = verifyImageSignature
+	runNewDockerClient      = func() (client.APIClient, error) { return client.New(client.FromEnv) }
+	runStopSidecar          = sidecar.StopSidecar
+)
+
 func newRunCmd() *cobra.Command {
 	var (
 		detach             bool
@@ -165,11 +175,11 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	// regardless of tag mutation.
 	policyRef := policyImageRef(cfg.Image, cfgPath)
 
-	orgPolicy, err := orgpolicy.ExtractPolicy(cmd.Context(), policyRef)
+	orgPolicy, err := runExtractPolicy(cmd.Context(), policyRef)
 	if err != nil {
 		return fmt.Errorf("run: extracting org policy from image: %w", err)
 	}
-	if err := orgpolicy.MergePolicy(orgPolicy, cfg); err != nil {
+	if err := runMergePolicy(orgPolicy, cfg); err != nil {
 		return fmt.Errorf("run: org policy violation: %w", err)
 	}
 
@@ -177,7 +187,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	// We verify against policyRef (the lockfile-pinned digest) so the
 	// signature check and the policy extraction operate on the same manifest.
 	if !insecureSkipVerify {
-		if err := verifyImageSignature(cmd, cfg, policyRef); err != nil {
+		if err := runVerifyImageSignature(cmd, cfg, policyRef); err != nil {
 			return fmt.Errorf("run: image signature verification failed: %w", err)
 		}
 	}
@@ -219,7 +229,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 		enfSource = "in-vm"
 		logger.Info("sandbox runtime: in-VM enforcement, skipping host sidecar")
 	} else {
-		sidecarHandle, enfAddr, err = resolveSidecar(cmd, cfg)
+		sidecarHandle, enfAddr, err = runResolveSidecar(cmd, cfg)
 		if err != nil {
 			return fmt.Errorf("run: %w", err)
 		}
@@ -242,10 +252,18 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	}
 	logger.Info("enforcement level resolved", zap.String("level", enfLevel.String()), zap.String("source", enfSource))
 
-	rt, err := newRuntime(runtimeFlag, logger, enfLevel)
+	rt, err := runRuntimeFactory(runtimeFlag, logger, enfLevel)
 	if err != nil {
 		return fmt.Errorf("run: %w", err)
 	}
+
+	sessionStarted := false
+	defer func() {
+		if sessionStarted || isSandbox || sidecarHandle == nil || !sidecarHandle.Managed {
+			return
+		}
+		stopManagedSidecar(cmd.OutOrStdout(), sidecarHandle)
+	}()
 
 	// 2b. Resolve secrets if configured.
 	var secretsMgr *secrets.Manager
@@ -324,6 +342,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	if err != nil {
 		return fmt.Errorf("run: starting container: %w", err)
 	}
+	sessionStarted = true
 
 	// For sandbox, read enforcer address from the session (set by the runtime).
 	if isSandbox && session.EnforcerAddr != "" {
@@ -447,19 +466,23 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	// Stop managed sidecar after agent container is stopped.
 	// (Sandbox runtime manages its own sidecar teardown in Stop().)
 	if !isSandbox && sidecarHandle != nil && sidecarHandle.Managed {
-		dockerCli, cliErr := client.New(client.FromEnv)
-		if cliErr == nil {
-			if stopErr := sidecar.StopSidecar(context.Background(), dockerCli, sidecarHandle); stopErr != nil {
-				logger.Warn("failed to stop agentcontainer-enforcer sidecar", zap.Error(stopErr))
-			} else {
-				_, _ = fmt.Fprintf(out, "Enforcer stopped\n")
-			}
-		} else {
-			logger.Warn("failed to create docker client for sidecar teardown", zap.Error(cliErr))
-		}
+		stopManagedSidecar(out, sidecarHandle)
 	}
 
 	return nil
+}
+
+func stopManagedSidecar(out io.Writer, handle *sidecar.SidecarHandle) {
+	dockerCli, cliErr := runNewDockerClient()
+	if cliErr != nil {
+		logger.Warn("failed to create docker client for sidecar teardown", zap.Error(cliErr))
+		return
+	}
+	if stopErr := runStopSidecar(context.Background(), dockerCli, handle); stopErr != nil {
+		logger.Warn("failed to stop agentcontainer-enforcer sidecar", zap.Error(stopErr))
+		return
+	}
+	_, _ = fmt.Fprintf(out, "Enforcer stopped\n")
 }
 
 // verifyImageSignature checks the cosign signature of imageRef when the
