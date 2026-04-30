@@ -35,7 +35,7 @@ mise run redteam:codex
 ```
 
 The task creates a temporary workspace, writes host and workspace canaries,
-starts `ac run --detach`, and prints a scoped prompt plus cleanup commands. Use
+starts `agentcontainer run --detach`, and prints a scoped prompt plus cleanup commands. Use
 `mise run redteam:codex -- --no-start` to only prepare the fixtures and inspect
 the generated config.
 

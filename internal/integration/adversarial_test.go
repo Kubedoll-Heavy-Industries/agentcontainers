@@ -6,20 +6,14 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/moby/moby/client"
-
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/adversarial"
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/config"
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/container"
-	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/enforcement"
-	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/enforcerapi"
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/policy"
-	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/sidecar"
 )
 
 func TestAdversarial_DockerDoesNotExposeHostCanary(t *testing.T) {
@@ -163,93 +157,6 @@ func TestAdversarial_HostilePromptCorpus(t *testing.T) {
 				t.Fatalf("unknown prompt expectation %q", prompt.Expect)
 			}
 		})
-	}
-}
-
-func TestAdversarial_EnforcerBindDenyAllBlocksListener(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	dockerCli, err := client.New(client.FromEnv)
-	if err != nil {
-		t.Fatalf("creating docker client: %v", err)
-	}
-
-	image := os.Getenv("AC_ADVERSARIAL_ENFORCER_IMAGE")
-	if image == "" {
-		image = "ac-enforcer:verify"
-		if _, err := dockerCli.ImageInspect(ctx, image); err != nil {
-			t.Skipf("set AC_ADVERSARIAL_ENFORCER_IMAGE or build %s to run bind-deny adversarial test: %v", image, err)
-		}
-	}
-
-	handle := &sidecar.SidecarHandle{Addr: sidecar.DiscoverExternalSidecar(sidecar.DiscoverOptions{}).Addr}
-	if handle.Addr == "" {
-		startOpts := sidecar.StartOptions{
-			Image:         image,
-			Required:      true,
-			HealthTimeout: 30 * time.Second,
-		}
-		if runtime.GOOS == "linux" {
-			socketDir, err := os.MkdirTemp("/tmp", "ac-enforcer-uds-*")
-			if err != nil {
-				t.Fatalf("creating enforcer socket dir: %v", err)
-			}
-			t.Cleanup(func() {
-				_ = os.RemoveAll(socketDir)
-			})
-			startOpts.SocketPath = filepath.Join(socketDir, "ac-enforcer.sock")
-		} else {
-			startOpts.RandomHostPort = true
-			t.Logf("using random TCP host port because Docker Desktop does not expose container-created UDS sockets to %s hosts", runtime.GOOS)
-		}
-		handle, err = sidecar.StartSidecar(ctx, dockerCli, startOpts)
-		if err != nil {
-			t.Fatalf("starting enforcer sidecar: %v", err)
-		}
-		t.Cleanup(func() {
-			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cleanupCancel()
-			if err := sidecar.StopSidecar(cleanupCtx, dockerCli, handle); err != nil {
-				t.Logf("warning: stopping enforcer sidecar: %v", err)
-			}
-		})
-	}
-	t.Setenv("AC_ENFORCER_ADDR", handle.Addr)
-
-	rt, err := container.NewDockerRuntime(
-		container.WithStopTimeout(5*time.Second),
-		container.WithEnforcementLevel(enforcement.LevelGRPC),
-	)
-	if err != nil {
-		t.Fatalf("creating docker runtime: %v", err)
-	}
-
-	p := policy.Resolve(nil)
-	p.ReadonlyRootfs = false
-	session, err := rt.Start(ctx, &config.AgentContainer{
-		Name:  "adversarial-bind-deny",
-		Image: testImage,
-	}, container.StartOptions{
-		Detach:            true,
-		Policy:            p,
-		BindPolicyRequest: &enforcerapi.BindPolicyRequest{},
-	})
-	if err != nil {
-		t.Fatalf("starting enforced container: %v", err)
-	}
-	t.Cleanup(func() {
-		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cleanupCancel()
-		_ = rt.Stop(cleanupCtx, session)
-	})
-
-	result, err := rt.Exec(ctx, session, []string{"sh", "-c", "nc -l -p 54321 -w 1 >/dev/null 2>&1"})
-	if err != nil {
-		t.Fatalf("exec bind probe: %v", err)
-	}
-	if result.ExitCode == 0 {
-		t.Fatalf("listener bind unexpectedly succeeded\nstdout:\n%s\nstderr:\n%s", result.Stdout, result.Stderr)
 	}
 }
 

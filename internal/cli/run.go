@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -265,7 +266,7 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	if cfg.Agent != nil {
 		caps = cfg.Agent.Capabilities
 	}
-	resolvedPolicy := policy.Resolve(caps)
+	resolvedPolicy := resolveRuntimePolicy(cfg)
 
 	// 3b. Apply policy config overrides.
 	var policyConfig *config.PolicyConfig
@@ -462,6 +463,19 @@ func runRun(cmd *cobra.Command, detach bool, timeout time.Duration, configPath s
 	return nil
 }
 
+func resolveRuntimePolicy(cfg *config.AgentContainer) *policy.ContainerPolicy {
+	var caps *config.Capabilities
+	if cfg != nil && cfg.Agent != nil {
+		caps = cfg.Agent.Capabilities
+	}
+
+	resolvedPolicy := policy.Resolve(caps)
+	if cfg != nil && cfg.Agent != nil {
+		resolvedPolicy.SecretACLs = policy.ResolveSecrets(cfg.Agent.Secrets, cfg.Agent.Tools)
+	}
+	return resolvedPolicy
+}
+
 // verifyImageSignature checks the cosign signature of imageRef when the
 // workspace config requires provenance signatures (F-1). The ref passed should
 // be the lockfile-pinned digest ref so the same manifest used for policy
@@ -567,10 +581,25 @@ func resolveSidecar(cmd *cobra.Command, cfg *config.AgentContainer) (*sidecar.Si
 	}
 
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Starting agentcontainer-enforcer sidecar...")
-	handle, err := sidecar.StartSidecar(cmd.Context(), dockerCli, sidecar.StartOptions{
+	startOpts := sidecar.StartOptions{
 		Image:    image,
 		Required: required,
-	})
+	}
+	if runtime.GOOS == "linux" {
+		socketDir, err := os.MkdirTemp("", "agentcontainer-enforcer-")
+		if err != nil {
+			if required {
+				return nil, "", fmt.Errorf("enforcer: creating socket dir: %w", err)
+			}
+			logger.Warn("could not create enforcer socket directory, falling back to random TCP", zap.Error(err))
+			startOpts.RandomHostPort = true
+		} else {
+			startOpts.SocketPath = filepath.Join(socketDir, "agentcontainer-enforcer.sock")
+		}
+	} else {
+		startOpts.RandomHostPort = true
+	}
+	handle, err := sidecar.StartSidecar(cmd.Context(), dockerCli, startOpts)
 	if err != nil {
 		return nil, "", fmt.Errorf("enforcer: %w", err)
 	}
