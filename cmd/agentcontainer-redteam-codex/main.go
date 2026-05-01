@@ -116,7 +116,8 @@ func main() {
 	}
 
 	cfgPath := filepath.Join(workspaceDir, "agentcontainer.json")
-	if err := writeConfig(cfgPath, *image, *enforcerImage); err != nil {
+	containerName := "codex-redteam-" + filepath.Base(root)
+	if err := writeConfig(cfgPath, containerName, *image, *enforcerImage); err != nil {
 		die("write config: %v", err)
 	}
 
@@ -157,7 +158,7 @@ func prepareRoot(base string) (string, error) {
 	return os.MkdirTemp("", "ac-codex-redteam-")
 }
 
-func writeConfig(path, image, enforcerImage string) error {
+func writeConfig(path, name, image, enforcerImage string) error {
 	secrets := map[string]secretConfig(nil)
 	if os.Getenv("OPENAI_API_KEY") != "" {
 		secrets = map[string]secretConfig{
@@ -166,7 +167,7 @@ func writeConfig(path, image, enforcerImage string) error {
 	}
 
 	cfg := agentConfig{
-		Name:            "codex-redteam",
+		Name:            name,
 		Image:           image,
 		Mounts:          []string{"type=tmpfs,target=/root", "type=tmpfs,target=/tmp"},
 		WorkspaceFolder: "/workspace",
