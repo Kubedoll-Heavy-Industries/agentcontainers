@@ -49,6 +49,9 @@ func TestRunNoStartPreparesCodexRedteamConfig(t *testing.T) {
 	if result.ContainerID != "" {
 		t.Fatalf("ContainerID = %q, want empty for --no-start", result.ContainerID)
 	}
+	if result.Profile != ProfileCodexRedteam {
+		t.Fatalf("Profile = %q", result.Profile)
+	}
 	if len(runner.captured) != 0 {
 		t.Fatalf("captured commands = %#v, want none for --no-start", runner.captured)
 	}
@@ -73,6 +76,92 @@ func TestRunNoStartPreparesCodexRedteamConfig(t *testing.T) {
 	}
 }
 
+func TestRunNoStartPreparesProcfsRuncProfile(t *testing.T) {
+	dir := t.TempDir()
+	var out bytes.Buffer
+
+	result, err := Run(context.Background(), Options{
+		Profile:            ProfileProcfsRunc,
+		BaseDir:            dir,
+		AgentcontainerPath: "/agentcontainer",
+		NoStart:            true,
+		Stdout:             &out,
+		Stderr:             io.Discard,
+		Runner:             &fakeRunner{},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Profile != ProfileProcfsRunc {
+		t.Fatalf("Profile = %q", result.Profile)
+	}
+	output := out.String()
+	for _, want := range []string{
+		"agentcontainer dojo profile prepared: procfs-runc",
+		"procfs, sysfs, cgroup",
+		"/proc/sys/kernel/core_pattern",
+		"/sys/fs/cgroup",
+		result.HostCanaryPath,
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output missing %q:\n%s", want, output)
+		}
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "workspace", "agentcontainer.json"))
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	for _, want := range []string{`"name": "procfs-runc-`, `"/proc/sys/**"`, `"/sys/fs/cgroup/**"`} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("config missing %q:\n%s", want, string(data))
+		}
+	}
+}
+
+func TestRunNoStartPreparesRuntimeSocketsProfile(t *testing.T) {
+	dir := t.TempDir()
+	var out bytes.Buffer
+
+	result, err := Run(context.Background(), Options{
+		Profile:            "sockets",
+		BaseDir:            dir,
+		AgentcontainerPath: "/agentcontainer",
+		NoStart:            true,
+		Stdout:             &out,
+		Stderr:             io.Discard,
+		Runner:             &fakeRunner{},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Profile != ProfileRuntimeSockets {
+		t.Fatalf("Profile = %q", result.Profile)
+	}
+	output := out.String()
+	for _, want := range []string{
+		"agentcontainer dojo profile prepared: runtime-sockets",
+		"Do not send API requests to any runtime socket",
+		"/run/podman/podman.sock",
+		"/var/run/secrets/kubernetes.io/serviceaccount/token",
+		"169.254.169.254",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output missing %q:\n%s", want, output)
+		}
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "workspace", "agentcontainer.json"))
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	for _, want := range []string{`"name": "runtime-sockets-`, `"/run/buildkit/buildkitd.sock"`, `"/run/podman/podman.sock"`} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("config missing %q:\n%s", want, string(data))
+		}
+	}
+}
+
 func TestRunStartsAndDropsIntoCodexChat(t *testing.T) {
 	dir := t.TempDir()
 	var out bytes.Buffer
@@ -92,6 +181,9 @@ func TestRunStartsAndDropsIntoCodexChat(t *testing.T) {
 	}
 	if result.ContainerID != "abc123def456" {
 		t.Fatalf("ContainerID = %q", result.ContainerID)
+	}
+	if result.Profile != ProfileCodexRedteam {
+		t.Fatalf("Profile = %q", result.Profile)
 	}
 	if len(runner.captured) != 2 {
 		t.Fatalf("captured commands = %#v, want docker build and agentcontainer run", runner.captured)
@@ -126,5 +218,8 @@ func TestRunRejectsUnknownProfile(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "unknown dojo profile") {
 		t.Fatalf("Run() error = %v, want unknown profile", err)
+	}
+	if !strings.Contains(err.Error(), ProfileProcfsRunc) || !strings.Contains(err.Error(), ProfileRuntimeSockets) {
+		t.Fatalf("Run() error = %v, want available profiles", err)
 	}
 }

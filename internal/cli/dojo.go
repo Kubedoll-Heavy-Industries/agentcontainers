@@ -31,8 +31,13 @@ func newDojoCmd() *cobra.Command {
 		Long: `Prepare a disposable adversarial harness, start it under
 agentcontainers enforcement, and drop into an interactive agent chat.
 
-The default profile is codex-redteam. It creates host/workspace canaries,
-starts a locked-down Codex container, and passes a scoped escape-test prompt to
+Available profiles:
+  codex-redteam    General bounded escape-test prompt with canaries
+  procfs-runc      Procfs/sysfs/cgroup and runtime setup confusion sweep
+  runtime-sockets  Runtime socket, Kubernetes token, and metadata sweep
+
+The default profile is codex-redteam. Each profile creates host/workspace
+canaries, starts a locked-down Codex container, and passes a scoped prompt to
 Codex automatically.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

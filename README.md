@@ -178,8 +178,10 @@ mise run build          # build binary to tmp/agentcontainer
 mise run test           # go test -race ./...
 mise run test:dogfood   # adversarial canary + Docker dogfood probes
 mise run test:integration:ts # TypeScript testcontainers integration suite
-mise run redteam:codex  # disposable locked-down manual escape-test container
-tmp/agentcontainer dojo # start the Codex red-team harness and enter chat
+mise run redteam:codex                # disposable locked-down manual escape-test container
+tmp/agentcontainer dojo               # start the default Codex red-team harness
+tmp/agentcontainer dojo procfs-runc   # focus on procfs/sysfs/cgroup runtime setup probes
+tmp/agentcontainer dojo runtime-sockets # focus on runtime sockets, K8s tokens, and metadata
 mise run test:cover     # tests with coverage report
 mise run lint           # golangci-lint
 mise run dev            # live reload with air

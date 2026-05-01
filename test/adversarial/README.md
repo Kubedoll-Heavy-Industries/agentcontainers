@@ -40,6 +40,14 @@ Use `agentcontainer dojo --no-chat` to start the harness and print cleanup
 commands without entering chat. Use `agentcontainer dojo --no-start` to only
 prepare the fixtures and inspect the generated config.
 
+Profiles:
+
+| Profile | Focus |
+|---|---|
+| `codex-redteam` | Default host/workspace canary sweep across files, sockets, metadata, and egress. |
+| `procfs-runc` | Read-only procfs/sysfs/cgroup, mount metadata, and runtime setup confusion sweep. |
+| `runtime-sockets` | Runtime control sockets, Kubernetes credentials, cloud metadata, and environment exposure. |
+
 The Codex image runs Codex with its own command sandbox disabled by default. This
 is deliberate: the container and enforcer are the system under test, and Codex's
 Bubblewrap sandbox requires nested user namespaces that are commonly unavailable

@@ -39,9 +39,9 @@ This page tracks container-security work that is directly relevant to adversaria
 | Profile | Purpose | Status |
 |---|---|---|
 | `codex-redteam` | Drop into a locked-down Codex agent container with workspace and host canaries. | Shipped. Keep it as the default smoke harness. |
-| `procfs-runc` | Regression suite for procfs/sysfs/cgroup write, mask, console, and bind-mount confusion classes. | Next. |
+| `procfs-runc` | Regression suite for procfs/sysfs/cgroup, mask, console, and bind-mount confusion classes. | Shipped as a manual dojo profile; automate next. |
 | `userns-matrix` | Compare Docker rootful, Docker userns-remap, Docker rootless, containerd rootless, and Docker Desktop behavior. | Next. |
-| `runtime-sockets` | Assert Docker, containerd, CRI-O, Podman, kubelet, and Kubernetes token absence. | Next. |
+| `runtime-sockets` | Assert Docker, containerd, CRI-O, Podman, kubelet, and Kubernetes token absence. | Shipped as a manual dojo profile; automate next. |
 | `network-canary` | Exercise allowlisted model egress, metadata denial, DNS behavior, and denied webhook canaries. | Next. |
 | `metadata-min` | Inventory `/proc`, `/sys`, mountinfo, cgroups, hostname, env, and runtime metadata exposure. | Next. |
 | `device-cdi` | Exercise GPU/CDI/device-plugin surfaces without exposing host helper hooks to untrusted images. | Planned. |
