@@ -37,5 +37,9 @@ RUN npm install -g @openai/codex \
 
 RUN find /usr /bin /sbin -xdev \( -perm -4000 -o -perm -2000 \) -type f -exec chmod a-s {} +
 
-ENV HOME=/root
+RUN mkdir -p /workspace \
+    && chown node:node /workspace
+
+USER node
+ENV HOME=/home/node
 WORKDIR /workspace

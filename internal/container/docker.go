@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -746,8 +747,29 @@ func parseMount(raw string) *mount.Mount {
 			}
 		}
 	}
+	if mt == mount.TypeTmpfs {
+		if opts := parseTmpfsOptions(fields); opts != nil {
+			m.TmpfsOptions = opts
+		}
+	}
 
 	return m
+}
+
+func parseTmpfsOptions(fields map[string]string) *mount.TmpfsOptions {
+	var opts mount.TmpfsOptions
+	hasOpts := false
+
+	if mode, ok := fields["tmpfs-mode"]; ok && mode != "" {
+		if parsed, err := strconv.ParseUint(mode, 0, 32); err == nil {
+			opts.Mode = os.FileMode(parsed)
+			hasOpts = true
+		}
+	}
+	if !hasOpts {
+		return nil
+	}
+	return &opts
 }
 
 // parsePropagation maps a propagation string to a mount.Propagation constant.

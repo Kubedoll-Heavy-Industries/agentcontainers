@@ -249,6 +249,32 @@ func TestStartSidecar_RandomHostPort(t *testing.T) {
 	}
 }
 
+func TestStartSidecar_GrantsProcRootInspectionCapability(t *testing.T) {
+	var capAdd []string
+	mock := &mockDockerClient{
+		containerCreateFn: func(ctx context.Context, opts client.ContainerCreateOptions) (client.ContainerCreateResult, error) {
+			capAdd = append([]string(nil), opts.HostConfig.CapAdd...)
+			return client.ContainerCreateResult{ID: "caps-id"}, nil
+		},
+	}
+
+	origProber := defaultHealthProber
+	defaultHealthProber = alwaysHealthy
+	defer func() { defaultHealthProber = origProber }()
+
+	_, err := StartSidecar(context.Background(), mock, StartOptions{
+		HealthTimeout:  1 * time.Second,
+		HealthInterval: 10 * time.Millisecond,
+		Required:       true,
+	})
+	if err != nil {
+		t.Fatalf("StartSidecar() unexpected error: %v", err)
+	}
+	if !containsString(capAdd, "SYS_PTRACE") {
+		t.Fatalf("CapAdd = %#v, want SYS_PTRACE for /proc/<pid>/root access across container UIDs", capAdd)
+	}
+}
+
 func TestStartSidecar_UnixSocket(t *testing.T) {
 	socketPath := t.TempDir() + "/agentcontainer-enforcer.sock"
 	var createdCmd []string
@@ -305,6 +331,15 @@ func TestStartSidecar_UnixSocket(t *testing.T) {
 	if strings.Join(createdCmd, " ") != strings.Join(wantCmd, " ") {
 		t.Errorf("cmd = %#v, want %#v", createdCmd, wantCmd)
 	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestStartSidecar_DefaultOptions(t *testing.T) {

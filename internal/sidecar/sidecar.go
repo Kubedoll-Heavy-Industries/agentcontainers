@@ -213,6 +213,7 @@ func StartSidecar(ctx context.Context, dockerClient client.APIClient, opts Start
 			"BPF",
 			"NET_ADMIN",
 			"SYS_ADMIN",
+			"SYS_PTRACE",
 			"SYS_RESOURCE",
 		},
 		PidMode: container.PidMode("host"),

@@ -169,7 +169,7 @@ func writeConfig(path, name, image, enforcerImage string) error {
 	cfg := agentConfig{
 		Name:            name,
 		Image:           image,
-		Mounts:          []string{"type=tmpfs,target=/root", "type=tmpfs,target=/tmp"},
+		Mounts:          []string{"type=tmpfs,target=/home/node,tmpfs-mode=0777", "type=tmpfs,target=/tmp"},
 		WorkspaceFolder: "/workspace",
 		Agent: agentPolicy{
 			Enforcer: enforcerConfig{Image: enforcerImage, Required: true},
