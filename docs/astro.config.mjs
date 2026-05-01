@@ -26,7 +26,7 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Architecture', slug: 'concepts/architecture' },
-            { label: 'Threat Model', slug: 'concepts/threat-model', badge: 'Coming Soon' },
+            { label: 'Threat Model', slug: 'concepts/threat-model' },
             { label: 'Capabilities', slug: 'concepts/capabilities', badge: 'Coming Soon' },
             { label: 'Provenance', slug: 'concepts/provenance', badge: 'Coming Soon' },
             { label: 'Enforcement', slug: 'concepts/enforcement' },
@@ -53,6 +53,7 @@ export default defineConfig({
           label: 'Project',
           items: [
             { label: 'Roadmap', slug: 'project/roadmap' },
+            { label: 'Container Security Research', slug: 'project/container-security-research' },
             { label: 'Contributing', slug: 'project/contributing' },
             { label: 'Security', slug: 'project/security' },
           ],

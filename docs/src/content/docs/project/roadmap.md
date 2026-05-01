@@ -7,11 +7,13 @@ description: Release plan and milestone status.
 
 | Milestone | Name | Status |
 |---|---|---|
-| M0 | Foundation | Complete |
-| M1 | Verify | Complete |
-| M2 | Attest | Complete |
-| M3 | Enforce | Complete |
-| M4 | Enterprise | In Progress |
+| M0 | Foundation | Shipped |
+| M1 | Verify | Shipped |
+| M2 | Sandbox | Shipped |
+| M3 | Attest | Shipped |
+| M4 | Enterprise | Mostly Complete |
+| M5 | Alpha Hardening | In Progress |
+| M6 | Ecosystem | Planning |
 
 ### M0: Foundation
 
@@ -21,15 +23,17 @@ CLI scaffolding, container lifecycle, config schema, runtime backends (Docker, C
 
 Lockfile generation, `ac lock` / `ac verify`, OCI resolver, signature verification.
 
-### M2: Attest
+### M2: Sandbox
+
+Docker Sandbox VM backend, in-VM enforcement, compose-in-sandbox, multi-arch enforcer image.
+
+### M3: Attest
 
 SLSA provenance attestations, SBOM generation, Sigstore signing, drift detection.
 
-### M3: Enforce
+### M4: Enterprise
 
 BPF enforcer sidecar, network/filesystem/process enforcement, approval broker, secrets manager with OIDC/env/Vault/1Password/Infisical providers.
-
-### M4: Enterprise (current)
 
 Three parallel workstreams:
 
@@ -37,4 +41,18 @@ Three parallel workstreams:
 - **M4-SECRETS**: On-demand secrets resolution with URI scheme detection (`op://`, `vault://`, `infisical://`, `env://`, `oidc://`)
 - **M4-CREDLSM**: BPF LSM credential enforcement -- `SECRET_ACLS` map in `file_open` hook for per-cgroup, TTL-aware credential gating at the kernel level
 
-See the [full roadmap](https://github.com/Kubedoll-Heavy-Industries/agentcontainers/blob/main/ROADMAP.md) for details.
+### M5: Alpha Hardening (current)
+
+Hardening the runtime against contemporary container escape classes and making dogfood/adversarial testing repeatable:
+
+- **M5-DOJO**: `agentcontainer dojo` profiles for Codex red-team sessions and automated canary sweeps
+- **M5-RUNTIME**: regression profiles for runc procfs/sysfs/cgroup classes, runtime sockets, user namespaces, rootless hosts, and Docker Desktop behavior
+- **M5-NETWORK**: canary-based egress tests for model APIs, metadata endpoints, DNS, and denied webhook destinations
+- **M5-EBPF**: enforcer privilege minimization, BPF/perf denial from the agent container, and sidecar TCB review
+- **M5-DOCS**: publish the threat model, research baseline, known limitations, and tested runtime matrix
+
+See [Container Security Research](/project/container-security-research/) for the detailed threat taxonomy and dojo profile backlog.
+
+### M6: Ecosystem
+
+VS Code extension, Firecracker backend, Linux Kubernetes integration, MCP registry integration, and external runtime matrix support.

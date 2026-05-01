@@ -29,7 +29,7 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 
 ## Status
 
-**Pre-Alpha.** M0–M4 are shipped; M5 (ecosystem) is in planning. The build and tests pass. The API and schema are not yet stable.
+**Pre-Alpha.** M0-M4 are mostly shipped; M5 alpha hardening is in progress. The build and tests pass. The API and schema are not yet stable.
 
 | Milestone | Status | What shipped |
 |-----------|--------|-------------|
@@ -38,7 +38,8 @@ Persistent AI agents require broad, long-lived system permissions. They read and
 | M2: Sandbox | Shipped | Docker Sandbox VM backend, in-VM enforcement, compose-in-sandbox, multi-arch enforcer image |
 | M3: Attest | Shipped | `agentcontainer sign`, Sigstore integration, SLSA provenance, drift threshold enforcement, offline verification |
 | M4: Enterprise | Mostly complete | Org policy as OCI layer, secrets (Vault/Infisical/1Password/OIDC), per-cgroup LSM credential enforcement |
-| M5: Ecosystem | Planning | VS Code extension, Firecracker backend, Linux K8s, MCP registry integration |
+| M5: Alpha Hardening | In progress | `agentcontainer dojo`, adversarial canary profiles, contemporary container escape regression sweeps |
+| M6: Ecosystem | Planning | VS Code extension, Firecracker backend, Linux K8s, MCP registry integration |
 
 ---
 
