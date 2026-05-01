@@ -15,6 +15,7 @@ description: All agentcontainer commands and their usage.
 | `agentcontainer ps` | List running agent containers |
 | `agentcontainer logs <name>` | View container logs |
 | `agentcontainer gc` | Garbage collect stopped containers and dangling images |
+| `agentcontainer dojo [profile]` | Start a disposable adversarial harness and drop into chat |
 
 ## Supply chain commands
 

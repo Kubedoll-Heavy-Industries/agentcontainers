@@ -31,13 +31,14 @@ mise run test:integration:ts
 Create a disposable locked-down container for manual Codex escape testing:
 
 ```sh
-mise run redteam:codex
+agentcontainer dojo
 ```
 
-The task creates a temporary workspace, writes host and workspace canaries,
-starts `agentcontainer run --detach`, and prints a scoped prompt plus cleanup commands. Use
-`mise run redteam:codex -- --no-start` to only prepare the fixtures and inspect
-the generated config.
+The command creates a temporary workspace, writes host and workspace canaries,
+starts `agentcontainer run --detach`, and drops into Codex with a scoped prompt.
+Use `agentcontainer dojo --no-chat` to start the harness and print cleanup
+commands without entering chat. Use `agentcontainer dojo --no-start` to only
+prepare the fixtures and inspect the generated config.
 
 The Codex image runs Codex with its own command sandbox disabled by default. This
 is deliberate: the container and enforcer are the system under test, and Codex's

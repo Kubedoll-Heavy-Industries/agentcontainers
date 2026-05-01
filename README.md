@@ -178,6 +178,7 @@ mise run test           # go test -race ./...
 mise run test:dogfood   # adversarial canary + Docker dogfood probes
 mise run test:integration:ts # TypeScript testcontainers integration suite
 mise run redteam:codex  # disposable locked-down manual escape-test container
+tmp/agentcontainer dojo # start the Codex red-team harness and enter chat
 mise run test:cover     # tests with coverage report
 mise run lint           # golangci-lint
 mise run dev            # live reload with air
