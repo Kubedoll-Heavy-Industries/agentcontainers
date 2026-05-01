@@ -5,8 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/moby/moby/api/pkg/stdcopy"
@@ -15,6 +18,7 @@ import (
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/config"
 	"github.com/Kubedoll-Heavy-Industries/agentcontainers/internal/enforcement"
@@ -358,6 +362,12 @@ func (d *DockerRuntime) ExecInteractive(ctx context.Context, session *Session, c
 	}
 	defer attach.Close()
 
+	cleanupTTY, err := configureLocalTTY(ctx, d.client, execResp.ID, execIO)
+	if err != nil {
+		return 0, err
+	}
+	defer cleanupTTY()
+
 	if execIO.Stdin != nil {
 		go func() {
 			_, _ = io.Copy(attach.Conn, execIO.Stdin)
@@ -379,6 +389,80 @@ func (d *DockerRuntime) ExecInteractive(ctx context.Context, session *Session, c
 	}
 
 	return inspect.ExitCode, nil
+}
+
+func configureLocalTTY(ctx context.Context, cli client.APIClient, execID string, execIO ExecIO) (func(), error) {
+	if !execIO.TTY {
+		return func() {}, nil
+	}
+
+	var cleanupFuncs []func()
+
+	if stdin, ok := execIO.Stdin.(*os.File); ok && isTerminal(stdin) {
+		fd := int(stdin.Fd())
+		state, err := unix.IoctlGetTermios(fd, ioctlGetTermios)
+		if err != nil {
+			return nil, fmt.Errorf("docker runtime: reading local terminal state: %w", err)
+		}
+
+		raw := *state
+		raw.Iflag &^= unix.IGNBRK | unix.BRKINT | unix.PARMRK | unix.ISTRIP | unix.INLCR | unix.IGNCR | unix.ICRNL | unix.IXON
+		raw.Oflag &^= unix.OPOST
+		raw.Lflag &^= unix.ECHO | unix.ECHONL | unix.ICANON | unix.ISIG | unix.IEXTEN
+		raw.Cflag &^= unix.CSIZE | unix.PARENB
+		raw.Cflag |= unix.CS8
+		raw.Cc[unix.VMIN] = 1
+		raw.Cc[unix.VTIME] = 0
+
+		if err := unix.IoctlSetTermios(fd, ioctlSetTermios, &raw); err != nil {
+			return nil, fmt.Errorf("docker runtime: enabling local terminal raw mode: %w", err)
+		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			_ = unix.IoctlSetTermios(fd, ioctlSetTermios, state)
+		})
+	}
+
+	if stdout, ok := execIO.Stdout.(*os.File); ok && isTerminal(stdout) {
+		resize := func() {
+			if size, err := unix.IoctlGetWinsize(int(stdout.Fd()), unix.TIOCGWINSZ); err == nil && size.Col > 0 && size.Row > 0 {
+				_, _ = cli.ExecResize(ctx, execID, client.ExecResizeOptions{
+					Height: uint(size.Row),
+					Width:  uint(size.Col),
+				})
+			}
+		}
+		resize()
+
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGWINCH)
+		done := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-sigCh:
+					resize()
+				case <-done:
+					return
+				}
+			}
+		}()
+
+		cleanupFuncs = append(cleanupFuncs, func() {
+			signal.Stop(sigCh)
+			close(done)
+		})
+	}
+
+	return func() {
+		for i := len(cleanupFuncs) - 1; i >= 0; i-- {
+			cleanupFuncs[i]()
+		}
+	}, nil
+}
+
+func isTerminal(file *os.File) bool {
+	_, err := unix.IoctlGetTermios(int(file.Fd()), ioctlGetTermios)
+	return err == nil
 }
 
 // Logs returns a ReadCloser that streams the container's combined stdout/stderr.
