@@ -54,7 +54,7 @@ These require separate controls outside agentcontainers:
 |---|---|---|
 | Undeclared network egress | BPF cgroup network hooks, Sandbox proxy enforcement, static egress policy | DNS observation is not fully attached in the alpha enforcer. Runtime DNS resolution is userspace-driven. |
 | Host filesystem reads | Read-only root filesystem, explicit mounts, policy resolver, LSM file hooks | Explicit deny paths are not fully wired from every config path into BPF maps. |
-| Secret theft | Tmpfs secret injection, credential ACL maps, TTL-aware secret policy, no env-based default | Process memory, inherited file descriptors, and already-read secrets remain application-level risks. |
+| Secret theft | Tmpfs secret injection, credential ACL maps, TTL-aware secret policy, no env-based default | Process memory, inherited file descriptors, already-read secrets, PID 1 environment, and same-user agent-local auth/session files remain application-level risks. |
 | Unapproved binaries | Approval broker, shell capability allowlist, BPF process hooks | Argument-level matching is not fully argv-aware in the kernel path. |
 | Runtime socket takeover | Default mount denylist, adversarial canary checks | Users can still opt into dangerous mounts; docs and approval flows must make that explicit. |
 | Ambient root escalation | Non-root red-team image, capability drop, no-new-privileges, seccomp, read-only rootfs | User namespace behavior depends on host runtime support and must be tested per backend. |
