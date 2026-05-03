@@ -51,8 +51,8 @@ Hardening the runtime against contemporary container escape classes and making d
 - **M5-EBPF**: enforcer privilege minimization, BPF/perf denial from the agent container, and sidecar TCB review
 - **M5-DOCS**: publish the threat model, research baseline, known limitations, and tested runtime matrix
 
-See [Container Security Research](/project/container-security-research/) for the detailed threat taxonomy and dojo profile backlog.
+See [Container Security Research](/project/container-security-research/) for the threat taxonomy and [Runtime Matrix](/project/runtime-matrix/) for backend/profile comparison.
 
 ### M6: Ecosystem
 
-VS Code extension, Firecracker backend, Linux Kubernetes integration, MCP registry integration, and external runtime matrix support.
+VS Code extension, Firecracker backend, Linux Kubernetes integration, MCP registry integration, and external runtime matrix support across Talos, Sysbox, gVisor, Kata/Firecracker, Docker, and containerd environments.

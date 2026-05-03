@@ -54,6 +54,7 @@ export default defineConfig({
           items: [
             { label: 'Roadmap', slug: 'project/roadmap' },
             { label: 'Container Security Research', slug: 'project/container-security-research' },
+            { label: 'Runtime Matrix', slug: 'project/runtime-matrix' },
             { label: 'Contributing', slug: 'project/contributing' },
             { label: 'Security', slug: 'project/security' },
           ],

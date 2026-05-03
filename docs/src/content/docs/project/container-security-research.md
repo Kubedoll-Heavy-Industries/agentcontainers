@@ -7,6 +7,8 @@ Last reviewed: May 1, 2026.
 
 This page tracks container-security work that is directly relevant to adversarial AI agent workloads. It is intentionally defensive: it maps public research and vendor guidance to invariants that `agentcontainer dojo` profiles should test.
 
+For backend comparison across Docker, containerd, Kubernetes, Talos, Sysbox, gVisor, Kata, Firecracker, and CDI/device profiles, see [Runtime Matrix](/project/runtime-matrix/).
+
 ## Current Signals
 
 | Signal | Why it matters for agentcontainers | Primary source |
@@ -47,6 +49,7 @@ This page tracks container-security work that is directly relevant to adversaria
 | `device-cdi` | Exercise GPU/CDI/device-plugin surfaces without exposing host helper hooks to untrusted images. | Planned. |
 | `k8s-kind` | Run the same canary suite inside kind with Pod Security, seccomp, userns, and service-account variations. | Planned. |
 | `ebpf-tcb` | Verify the enforcer sidecar privilege boundary and agent inability to load or manipulate BPF. | Planned. |
+| `runtime-matrix` | Compare host OS, runtime, orchestrator, workload, and enforcement-mode combinations with shared verdicts. | Planned. |
 
 ## Dogfood Findings
 
